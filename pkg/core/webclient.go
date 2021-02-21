@@ -28,11 +28,15 @@ func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, er
 
 	resp, err := c.client.Get(baseURL)
 	if err != nil {
-		// handle error
+		return 0, result, err
 	}
 	defer resp.Body.Close()
 
 	statusCode = resp.StatusCode
+
+	if statusCode >= 400 {
+		return statusCode, result, nil
+	}
 
 	// TODO: Make sure body is utf-8 encoded
 	rawLinks, err := parse(resp.Body)
@@ -50,7 +54,10 @@ func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, er
 			continue
 		}
 
-		fmt.Printf("URL: %+v\n", *u)
+		// take care of relative links here
+		_ = *u
+
+		result = append(result, link)
 	}
 
 	// body, err := io.ReadAll(resp.Body)

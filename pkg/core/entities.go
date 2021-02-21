@@ -16,10 +16,22 @@ type Task struct {
 	depth uint
 }
 
+type Entry struct {
+	ParentURL string
+	URL       string
+	depth     uint
+}
+
 // URL might be an absolute URL or a relative URL.
 type Result struct {
 	ParentURL  string
-	StatusCode uint
+	StatusCode int
 	URLs       []string
 	depth      uint
+	err        error
+}
+
+type URLEntity struct {
+	Host   string
+	String string
 }
