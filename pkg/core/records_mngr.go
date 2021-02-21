@@ -11,20 +11,11 @@ func (rm *RecordsManager) AddRecord() {
 
 }
 
+// Match checks whether this URL already exists in the DB
+func (rm *RecordsManager) Match() bool {
+	return false
+}
+
 func (rm *RecordsManager) SaveToFile(file string) {
 
-}
-
-type Record struct {
-	URL      string
-	Hostname string
-	Title    string
-	depth    uint
-	edges    []uint
-}
-
-// Entry is what gets sent to the channel for workers to pull data from the web
-type Entry struct {
-	URL   string
-	depth uint
 }

@@ -1,13 +1,62 @@
 package core
 
 import (
+	"fmt"
 	"io"
+	"log"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
-type HTMLParser struct {
+// WebClient is responsible to connect to the links and manage connections to websites.
+// Implements Connector interface
+type WebClient struct {
+	client *http.Client
+}
+
+func NewWebClient(client *http.Client) *WebClient {
+	return &WebClient{client: client}
+}
+
+// We want to make sure that we use the same http.Client to reuse connection to get links from other pages being served by the same server.
+// Set timeouts and what not.
+func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, err error) {
+	result := []string{}
+
+	resp, err := c.client.Get(baseURL)
+	if err != nil {
+		// handle error
+	}
+	defer resp.Body.Close()
+
+	statusCode = resp.StatusCode
+
+	// TODO: Make sure body is utf-8 encoded
+	rawLinks, err := parse(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// fmt.Printf("%v\n", links)
+
+	for _, link := range rawLinks {
+
+		u, err := url.Parse(link)
+		if err != nil {
+			fmt.Printf("ERROR: this one was not cool: %s", link)
+			continue
+		}
+
+		fmt.Printf("URL: %+v\n", *u)
+	}
+
+	// body, err := io.ReadAll(resp.Body)
+	// fmt.Println(string(body))
+
+	return statusCode, result, nil
 }
 
 func parse(r io.Reader) ([]string, error) {

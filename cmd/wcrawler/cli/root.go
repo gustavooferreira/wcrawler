@@ -6,8 +6,10 @@ import (
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "wcrawler",
-		Short: "A cli tool for crawling the web",
+		Use:          "wcrawler",
+		Short:        "A cli tool for crawling the web",
+		SilenceUsage: true,
+		// SilenceErrors: true,
 	}
 
 	// Init sub commands

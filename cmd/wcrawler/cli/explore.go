@@ -22,18 +22,19 @@ func newExploreCmd() *cobra.Command {
 		Use:   "explore URL",
 		Short: "Explore the web by following links up to a pre-determined depth",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
-
-			// Validate url is actually a url
-			// fmt.Printf("file: %+v - workers: %+v - timeout: %+v - stats: %+v - url: %+v\n", file, workers, timeout, stats, url)
 
 			client = &http.Client{
 				Timeout: time.Second * time.Duration(timeout),
 			}
 
-			c := core.NewCrawler(client, file, stats, workers, depth)
-			c.Run(url)
+			c, err := core.NewCrawler(client, url, file, stats, workers, depth)
+			if err != nil {
+				return err
+			}
+			c.Run()
+			return nil
 		},
 	}
 
