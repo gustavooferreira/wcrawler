@@ -44,3 +44,6 @@
 
 # VIM temporary files
 .*.sw*
+
+# Ignore bin folder
+/bin/
