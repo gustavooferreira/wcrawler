@@ -1,7 +1,6 @@
 package core_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/gustavooferreira/wcrawler/pkg/core"
@@ -51,16 +50,13 @@ func TestExtractParentURL(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var errBool bool
-			var errMsg string
 			value, err := core.ExtractParentURL(test.url)
-			if err != nil {
-				errBool = true
-				errMsg = fmt.Sprintf(" - err: %s", err.Error())
+			if test.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expectedURL, value)
 			}
-			require.Equal(t, test.expectedErr, errBool, "error field"+errMsg)
-
-			assert.Equal(t, test.expectedURL, value)
 		})
 	}
 }
@@ -95,16 +91,11 @@ func TestExtractURL(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var errBool bool
-			var errMsg string
 			value, err := core.ExtractURL(test.parentURL, test.url)
-			if err != nil {
-				errBool = true
-				errMsg = fmt.Sprintf(" - err: %s", err.Error())
-			}
-			require.Equal(t, test.expectedErr, errBool, "error field"+errMsg)
-
-			if !test.expectedErr {
+			if test.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 				assert.Equal(t, test.expectedURL, value)
 			}
 		})

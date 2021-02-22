@@ -3,12 +3,12 @@ package core
 // Record represents an entry in the RecordManager (internal state).
 type Record struct {
 	// Index allows easy referencing of records (this is used for when writing the struct to file)
-	Index     uint
-	ParentURL string
-	URL       string
-	Host      string
-	Depth     uint
-	Edges     []uint
+	Index     uint   `json:"index"`
+	ParentURL string `json:"parent_url"`
+	URL       string `json:"url"`
+	Host      string `json:"host"`
+	Depth     uint   `json:"depth"`
+	Edges     []uint `json:"edges"`
 }
 
 // RMEntry represents an entry in the RecordManager (external interface).

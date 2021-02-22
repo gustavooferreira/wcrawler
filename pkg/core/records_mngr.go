@@ -1,6 +1,10 @@
 package core
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+)
 
 // RecordManager keep track of which links we've visited and which ones we need to visit.
 // Consolidates all data.
@@ -70,12 +74,23 @@ func (rm *RecordManager) Count(rawURL string) int {
 	return len(rm.records)
 }
 
-// SaveToFile dumps the records map into a file in JSON format.
-func (rm *RecordManager) SaveToFile(filepath string) {
-
+// Dump returns all records in the RecordManager.
+func (rm *RecordManager) Dump(rawURL string) map[string]Record {
+	return rm.records
 }
 
-// LoadFromFile dumps the records map into a file in JSON format.
-func (rm *RecordManager) LoadFromFile(filepath string) {
+// SaveToWriter dumps the records map into a Writer in JSON format.
+// Can pass a os.File, to write to a file.
+func (rm *RecordManager) SaveToWriter(w io.Writer) error {
+	encoder := json.NewEncoder(w)
+	err := encoder.Encode(rm.records)
+	return err
+}
 
+// LoadFromReader reads the records from a Reader in JSON format.
+// Can pass a os.File, to read from a file.
+func (rm *RecordManager) LoadFromReader(r io.Reader) error {
+	decoder := json.NewDecoder(r)
+	err := decoder.Decode(&rm.records)
+	return err
 }

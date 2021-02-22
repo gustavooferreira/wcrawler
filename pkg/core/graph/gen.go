@@ -1,5 +1,7 @@
 package graph
 
+import _ "embed"
+
 //go:embed "graph.tmpl"
 var htmlTemplate string
 
