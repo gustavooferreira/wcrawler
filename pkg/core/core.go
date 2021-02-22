@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"net/url"
+	"path"
+	"strings"
 )
 
 // ----------
@@ -43,24 +45,43 @@ func ExtractParentURL(rawURL string) (string, error) {
 // ExtractURL behaves the same way as parent URL, except that in also includes query params.
 // If URL provided is relative, it will join the URLs.
 func ExtractURL(parentURL string, rawURL string) (URLEntity, error) {
-	// parentURL must be well formatted, including scheme, authority
-	// and potentially a path, but nothing else.
+	// Check whether rawURL is absolute or not
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return URLEntity{}, fmt.Errorf("URL not in a valid format: %s", err)
+	}
 
-	// Make sure we only take into consideration the scheme, authority, path and query parts of the URL
+	if (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
+		rawURL = fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path)
 
-	// Validate parentURL
+		if u.RawQuery != "" {
+			rawURL += "?" + u.RawQuery
+		}
 
-	// Validate rawURL (if URL is relative, join with parent URL)
+		return URLEntity{Host: u.Host, String: rawURL}, nil
+	}
 
-	// u, err := url.Parse(rawURL)
-	// if err != nil {
-	// 	return false, err
-	// }
+	parentU, err := url.Parse(parentURL)
+	if err != nil {
+		return URLEntity{}, fmt.Errorf("parent URL not in a valid format: %s", err)
+	}
 
-	// if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-	// 	return false, fmt.Errorf("URL provided is not absolute")
-	// }
+	if strings.HasPrefix(u.Path, "/") {
+		rawURL = fmt.Sprintf("%s://%s%s", parentU.Scheme, parentU.Host, u.Path)
 
-	// rawURL = u.Scheme
-	return URLEntity{}, nil
+		if u.RawQuery != "" {
+			rawURL += "?" + u.RawQuery
+		}
+
+		return URLEntity{Host: parentU.Host, String: rawURL}, nil
+	} else {
+		u.Path = path.Join(parentU.Path, u.Path)
+		rawURL = fmt.Sprintf("%s://%s%s", parentU.Scheme, parentU.Host, u.Path)
+
+		if u.RawQuery != "" {
+			rawURL += "?" + u.RawQuery
+		}
+
+		return URLEntity{Host: parentU.Host, String: rawURL}, nil
+	}
 }

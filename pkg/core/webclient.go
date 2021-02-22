@@ -54,7 +54,7 @@ func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, er
 			continue
 		}
 
-		// take care of relative links here
+		// TODO: take care of relative links here
 		_ = *u
 
 		result = append(result, link)
@@ -67,6 +67,9 @@ func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, er
 }
 
 func parse(r io.Reader) ([]string, error) {
+
+	// TODO: same webpages will have the <base> tag inside <head> which should be used
+	// when joining relative URLs.
 
 	result := []string{}
 
@@ -120,11 +123,4 @@ func getHref(t html.Token) (ok bool, href string) {
 	// "bare" return will return the variables (ok, href) as defined in
 	// the function definition
 	return
-}
-
-// FindLinks will find all <a> tags with an href attribute.
-// Returns a list of links.
-// Can also do a bit of clean up before sending the response, like if local URL append to current URL visiting.
-func FindLinks() {
-
 }

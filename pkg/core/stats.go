@@ -39,6 +39,7 @@ func (sm *StatsManager) UpdateStats(state AppState, linksCount uint, errorCounts
 }
 
 // This prints to an io.Reader the updated stats
+// Run this in a goroutine
 func (sm *StatsManager) RunWriter() {
 
 	// start listening to updates and render

@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -88,7 +89,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 
 			}
 
-			r := Result{ParentURL: t.URL, StatusCode: statusCode, URLs: links, depth: t.depth + 1}
+			r := Result{ParentURL: t.URL, StatusCode: statusCode, URLs: links, Depth: t.Depth + 1}
 
 			c.results <- r
 		}
@@ -105,19 +106,61 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 }
 
 func (c *Crawler) Merger() {
+
+	// Initialize record manager
+	rm := NewRecordManager()
+
 	// Add baseURL to tasks channel
-	task := Task{URL: c.BaseURL, depth: 0}
+	task := Task{URL: c.BaseURL, Depth: 0}
 	c.tasks <- task
+
+	// Keep local counter to know what jobs have been done.
+	// when counter reaches zero it means there are no more jobs to be processed
+	// and the merger can exit.
+	// It starts at 1 because we queued the first job already
+	jobsCounter := 1
+
+	// keep local queue, where next links will be queued
+	//
 
 	end := false
 
 	for {
 		select {
 		case r := <-c.results:
+			// Got a response means we can decrement the job counter.
+			jobsCounter--
+
+			// when processing the new links, make sure every time we queue a new link
+			// we increase the jobCounter
+
+			for _, uu := range r.URLs {
+				rm.Match(uu)
+
+				u, err := url.Parse(uu)
+				if err != nil {
+					continue
+				}
+				fmt.Printf("URL: %+v\n", u)
+			}
+
+			// check depth, if equal or greater then set, then don't queue more
+
+			// check if URLs in rm if not, add them
+
+			// update the stats on what it has found so far to be printed on the screen.
+
 			fmt.Printf("URLs: %+v\n", r.URLs)
-			close(c.tasks)
-			end = true
+
+			// check if we are done
+			if jobsCounter == 0 {
+				close(c.tasks)
+				end = true
+			}
 		}
+
+		// select with default to push as many items from the queue to the channel
+		// as possible.
 
 		if end {
 			break
