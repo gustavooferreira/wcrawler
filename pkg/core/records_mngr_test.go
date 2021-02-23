@@ -13,9 +13,9 @@ func TestAddRecords(t *testing.T) {
 	rm := core.NewRecordManager()
 	addEntries(rm)
 
-	value, err := rm.Get("http://example1.com")
-	require.NoError(t, err)
+	value, ok := rm.Get("http://example1.com")
 
+	require.Equal(t, true, ok)
 	assert.Equal(t, []uint{1, 2}, value.Edges)
 }
 
@@ -55,8 +55,8 @@ func TestLoadFromWriter(t *testing.T) {
 	buf.WriteString(input)
 	rm.LoadFromReader(&buf)
 
-	r, err := rm.Get("http://example1.com")
-	require.NoError(t, err)
+	r, ok := rm.Get("http://example1.com")
+	require.Equal(t, true, ok)
 
 	assert.Equal(t, []uint{1, 2}, r.Edges)
 }

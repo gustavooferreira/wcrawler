@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -62,11 +61,11 @@ func (rm *RecordManager) Match(rawURL string) bool {
 }
 
 // Get returns a record from the Record Manager.
-func (rm *RecordManager) Get(rawURL string) (Record, error) {
+func (rm *RecordManager) Get(rawURL string) (Record, bool) {
 	if r, ok := rm.records[rawURL]; ok {
-		return r, nil
+		return r, true
 	}
-	return Record{}, fmt.Errorf("no record found")
+	return Record{}, false
 }
 
 // Count counts the number of records.

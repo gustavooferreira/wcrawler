@@ -9,32 +9,34 @@ WCrawler is a simple web crawler CLI tool.
 Exploring the Web:
 
 ```
-❯ wcrawler explore -h
+❯ wcrawler explore --help
 Explore the web by following links up to a pre-determined depth
 
 Usage:
   wcrawler explore URL [flags]
 
 Flags:
-  -f, --file string    file to save results (default "./web_graph.json")
-  -d, --depth uint     depth of recursion (default 10)
-  -s, --stats          show live stats (default true)
-  -t, --timeout uint   HTTP requests timeout (default 10)
-  -w, --workers uint   number of workers making concurrent requests (default 10)
+  -d, --depth uint        depth of recursion (default 10)
+  -f, --file string       file to save results (default "./web_graph.json")
+  -s, --stats             show live stats (default true)
+  -z, --stayinsubdomain   follow links only in the same subdomain
+  -t, --timeout uint      HTTP requests timeout (default 10)
+  -w, --workers uint      number of workers making concurrent requests (default 10)
+
 ```
 
 Visualizing the graph in the browser:
 
 ```
-❯ wcrawler view -h
+❯ wcrawler view --help
 View web links relationships in the browser
 
 Usage:
   wcrawler view [flags]
 
 Flags:
-  -f, --file string   file containing the data (default "./web_graph.json")
-
+  -i, --input string    file containing the data (default "./web_graph.json")
+  -o, --output string   HTML output (default "./web_graph.html")
 ```
 
 This will generate a webpage and load it on your default browser.
@@ -51,6 +53,17 @@ This command will then generate an HTML file with a graph view of the data colle
 
 ```
 wcrawler view -f /tmp/result.json
+```
+
+---
+
+# Third party libraries being used (directly):
+
+```
+- github.com/gosuri/uilive     [updating terminal output in realtime]
+- github.com/spf13/cobra       [CLI args and flags parsing]
+- github.com/stretchr/testify  [writing unit tests]
+- golang.org/x/net             [HTML parsing]
 ```
 
 ---

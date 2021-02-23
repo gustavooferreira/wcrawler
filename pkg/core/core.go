@@ -13,7 +13,7 @@ import (
 
 // Connector describes the connector interface
 type Connector interface {
-	GetLinks(baseURL string) (statusCode int, links []string, err error)
+	GetLinks(rawURL string) (statusCode int, links []URLEntity, err error)
 }
 
 // ---------------

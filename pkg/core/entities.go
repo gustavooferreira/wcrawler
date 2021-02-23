@@ -2,8 +2,9 @@ package core
 
 // Record represents an entry in the RecordManager (internal state).
 type Record struct {
-	// Index allows easy referencing of records (this is used for when writing the struct to file)
-	Index     uint   `json:"index"`
+	// Index allows easy referencing of records (used in the edges)
+	Index uint `json:"index"`
+	// ParentURL holds the URL for the first ParentURL found (there may be more)
 	ParentURL string `json:"parent_url"`
 	URL       string `json:"url"`
 	Host      string `json:"host"`
@@ -33,7 +34,7 @@ type Task struct {
 type Result struct {
 	ParentURL  string
 	StatusCode int
-	URLs       []string
+	URLs       []URLEntity
 	Depth      uint
 	Err        error
 }

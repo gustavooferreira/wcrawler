@@ -23,10 +23,10 @@ func NewWebClient(client *http.Client) *WebClient {
 
 // We want to make sure that we use the same http.Client to reuse connection to get links from other pages being served by the same server.
 // Set timeouts and what not.
-func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, err error) {
-	result := []string{}
+func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, err error) {
+	result := []URLEntity{}
 
-	resp, err := c.client.Get(baseURL)
+	resp, err := c.client.Get(rawURL)
 	if err != nil {
 		return 0, result, err
 	}
@@ -55,9 +55,9 @@ func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, er
 		}
 
 		// TODO: take care of relative links here
-		_ = *u
 
-		result = append(result, link)
+		l := URLEntity{Host: u.Host, String: link}
+		result = append(result, l)
 	}
 
 	// body, err := io.ReadAll(resp.Body)
@@ -66,6 +66,9 @@ func (c *WebClient) GetLinks(baseURL string) (statusCode int, links []string, er
 	return statusCode, result, nil
 }
 
+// Parse <base> tag if it exists
+// Parse all <a> tags
+// Validate whether they are absolute or relative tags. Also check if the relative tags start with a /
 func parse(r io.Reader) ([]string, error) {
 
 	// TODO: same webpages will have the <base> tag inside <head> which should be used
@@ -110,7 +113,7 @@ func parse(r io.Reader) ([]string, error) {
 	}
 }
 
-// Helper function to pull the href attribute from a Token
+// getHref returns the href attribute from a Token
 func getHref(t html.Token) (ok bool, href string) {
 	// Iterate over all of the Token's attributes until we find an "href"
 	for _, a := range t.Attr {
@@ -119,8 +122,5 @@ func getHref(t html.Token) (ok bool, href string) {
 			ok = true
 		}
 	}
-
-	// "bare" return will return the variables (ok, href) as defined in
-	// the function definition
 	return
 }

@@ -10,12 +10,13 @@ import (
 
 func newExploreCmd() *cobra.Command {
 	var (
-		file    string
-		stats   bool
-		workers uint
-		timeout uint
-		depth   uint
-		client  *http.Client
+		file            string
+		stats           bool
+		workers         uint
+		timeout         uint
+		depth           uint
+		stayinsubdomain bool
+		client          *http.Client
 	)
 
 	exploreCmd := &cobra.Command{
@@ -29,7 +30,7 @@ func newExploreCmd() *cobra.Command {
 				Timeout: time.Second * time.Duration(timeout),
 			}
 
-			c, err := core.NewCrawler(client, url, file, stats, workers, depth)
+			c, err := core.NewCrawler(client, url, file, stats, stayinsubdomain, workers, depth)
 			if err != nil {
 				return err
 			}
@@ -40,6 +41,7 @@ func newExploreCmd() *cobra.Command {
 
 	exploreCmd.Flags().StringVarP(&file, "file", "f", "./web_graph.json", "file to save results")
 	exploreCmd.Flags().BoolVarP(&stats, "stats", "s", true, "show live stats")
+	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")
 	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout")
 	exploreCmd.Flags().UintVarP(&depth, "depth", "d", 10, "depth of recursion")

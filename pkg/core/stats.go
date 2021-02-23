@@ -16,13 +16,23 @@ type StatsManager struct {
 
 	state AppState
 
+	// This is the total number of links still to be checked
+	// This number will keep increasing as new links are found.
+	linksInQueue   uint
 	linksCount     uint
 	errorCounts    uint
 	workersRunning uint
+	// current level of depth
+	depth uint
+	// depth level provided by user
+	maxDepthLevel uint
+
+	// Read only vars
+	totalWorkersCount uint
 }
 
-func NewStatsManager() *StatsManager {
-	sm := StatsManager{state: AppState_IDLE}
+func NewStatsManager(totalWorkersCount uint, depth uint) *StatsManager {
+	sm := StatsManager{state: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
 	sm.writer = uilive.New()
 
 	return &sm
@@ -30,7 +40,7 @@ func NewStatsManager() *StatsManager {
 
 // This updates the stats counters, this is cumulative, meaning only put the numbers to add to the total
 // workersRunning can be negative, when they finish processing they will decrement this.
-func (sm *StatsManager) UpdateStats(state AppState, linksCount uint, errorCounts uint, workersRunning int) {
+func (sm *StatsManager) UpdateStats(state AppState, linksInQueueInc uint, linksCountInc uint, errorCountsInc uint, workersRunningCounter int) {
 	sm.Lock()
 	defer sm.Unlock()
 
@@ -38,24 +48,27 @@ func (sm *StatsManager) UpdateStats(state AppState, linksCount uint, errorCounts
 
 }
 
-// This prints to an io.Reader the updated stats
+// This functions writes to an io.Writer the updated stats
 // Run this in a goroutine
 func (sm *StatsManager) RunWriter() {
-
-	// start listening to updates and render
 	sm.writer.Start()
 
 	for {
+		sm.Lock()
+		fmt.Fprintf(sm.writer, "App State: %s      Workers (%d/%d)\nLinks Count: %5d   Errors: (%d/%d)\n",
+			sm.state, sm.workersRunning, sm.totalWorkersCount, sm.linksCount,
+			sm.errorCounts, sm.linksCount)
+		sm.Unlock()
 
 		// Only stop when AppState == Finished!
+		if sm.state == AppState_Finished {
+			break
+		}
 
-		sm.Lock()
-		fmt.Fprintf(sm.writer, "Downloading.. (%d/%d) GB\nDownloading.. (%d/%d) GB\n", 1, 100, 1*2, 200)
-		sm.Unlock()
 		time.Sleep(time.Millisecond * 50)
 	}
 
-	fmt.Fprintln(sm.writer, "Finished: Downloaded 100GB")
+	fmt.Fprintln(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)
 	sm.writer.Stop() // flush and stop rendering
 }
 

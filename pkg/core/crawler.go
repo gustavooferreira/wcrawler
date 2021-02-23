@@ -12,18 +12,19 @@ type Crawler struct {
 	connector Connector
 
 	// Read-only vars
-	BaseURL      string
-	File         string
-	Stats        bool
-	WorkersCount uint
-	Depth        uint
+	BaseURL         string
+	File            string
+	Stats           bool
+	StayInSubdomain bool
+	WorkersCount    uint
+	Depth           uint
 
 	// Channels
 	tasks   chan Task
 	results chan Result
 }
 
-func NewCrawler(client *http.Client, baseURL string, file string, stats bool, workersCount uint, depth uint) (*Crawler, error) {
+func NewCrawler(client *http.Client, baseURL string, file string, stats bool, stayinsubdomain bool, workersCount uint, depth uint) (*Crawler, error) {
 
 	if !IsAbsoluteURL(baseURL) {
 		return nil, fmt.Errorf("URL provided is not valid")
@@ -38,7 +39,15 @@ func NewCrawler(client *http.Client, baseURL string, file string, stats bool, wo
 	}
 
 	connector := WebClient{client: client}
-	return &Crawler{connector: &connector, BaseURL: baseURL, File: file, Stats: stats, WorkersCount: workersCount, Depth: depth}, nil
+	return &Crawler{
+			connector:       &connector,
+			BaseURL:         baseURL,
+			File:            file,
+			Stats:           stats,
+			StayInSubdomain: stayinsubdomain,
+			WorkersCount:    workersCount,
+			Depth:           depth},
+		nil
 }
 
 func (c *Crawler) Run() {
@@ -49,7 +58,13 @@ func (c *Crawler) Run() {
 
 	var wg sync.WaitGroup
 
+	// Start stats goroutine
+	sm := NewStatsManager(c.WorkersCount, c.Depth)
+	wg.Add(1)
+	go c.StatsWriter(sm)
+
 	// Start merger goroutine (deals with records manager)
+	wg.Add(1)
 	go c.Merger()
 
 	// Start workers (n workers)
@@ -59,12 +74,10 @@ func (c *Crawler) Run() {
 	}
 
 	// Start goroutine that handles Ctrl-C (which will close all channels and drain them as well)
+	// upon receiving sigInt, inform Merger to stop processing any more links.
 
-	// wait for group
+	// wait for all goroutines to complete
 	wg.Wait()
-
-	// If stats == true, then write last message
-	fmt.Printf("FINISHED!!\n")
 }
 
 // WorkerRun represents the workers doing work in a goroutine
@@ -105,6 +118,8 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 	// Returns a list of URLs (and some stats data, like error, status code, etc)
 }
 
+// Merger gets the results from the workers (links) and keeps all the relevant information
+// feeding the new links to workers via another channel.
 func (c *Crawler) Merger() {
 
 	// Initialize record manager
@@ -135,9 +150,9 @@ func (c *Crawler) Merger() {
 			// we increase the jobCounter
 
 			for _, uu := range r.URLs {
-				rm.Match(uu)
+				rm.Match(uu.String)
 
-				u, err := url.Parse(uu)
+				u, err := url.Parse(uu.String)
 				if err != nil {
 					continue
 				}
@@ -168,4 +183,9 @@ func (c *Crawler) Merger() {
 	}
 
 	// Write to file if enabled
+}
+
+// StatsWriter writes stats to a io.Writer (e.g. os.Stdout)
+func (c *Crawler) StatsWriter(sm *StatsManager) {
+	sm.RunWriter()
 }
