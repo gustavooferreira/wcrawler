@@ -5,8 +5,7 @@ import (
 	"io"
 )
 
-// RecordManager keep track of which links we've visited and which ones we need to visit.
-// Consolidates all data.
+// RecordManager keeps track of links visited and some metadata like depth level and its children.
 type RecordManager struct {
 	// Keeps a table of records. Key is the URL (scheme,authority,path,query)
 	records    map[string]Record

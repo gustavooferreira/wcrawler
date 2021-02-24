@@ -2,6 +2,8 @@
 
 WCrawler is a simple web crawler CLI tool.
 
+**NOTE:** This tool was created mainly for practice purposes.
+
 ![gif usage image](docs/images/usage.gif "Usage example")
 
 # Usage
