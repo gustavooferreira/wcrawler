@@ -39,7 +39,7 @@ func newExploreCmd() *cobra.Command {
 		},
 	}
 
-	exploreCmd.Flags().StringVarP(&file, "file", "f", "./web_graph.json", "file to save results")
+	exploreCmd.Flags().StringVarP(&file, "output", "o", "./web_graph.json", "file to save results")
 	exploreCmd.Flags().BoolVarP(&stats, "stats", "s", true, "show live stats")
 	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")

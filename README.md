@@ -17,12 +17,11 @@ Usage:
 
 Flags:
   -d, --depth uint        depth of recursion (default 10)
-  -f, --file string       file to save results (default "./web_graph.json")
+  -o, --output string     file to save results (default "./web_graph.json")
   -s, --stats             show live stats (default true)
   -z, --stayinsubdomain   follow links only in the same subdomain
   -t, --timeout uint      HTTP requests timeout (default 10)
   -w, --workers uint      number of workers making concurrent requests (default 10)
-
 ```
 
 Visualizing the graph in the browser:

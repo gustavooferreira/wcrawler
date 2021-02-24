@@ -68,11 +68,16 @@ func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, 
 
 // Parse <base> tag if it exists
 // Parse all <a> tags
+// Cater for the fact that a <a> link might be a mailto or a phone or something else.
+// Check if "Opaque" field in URL struct is set
 // Validate whether they are absolute or relative tags. Also check if the relative tags start with a /
 func parse(r io.Reader) ([]string, error) {
 
 	// TODO: same webpages will have the <base> tag inside <head> which should be used
 	// when joining relative URLs.
+
+	insideHead := false
+	base := ""
 
 	result := []string{}
 
@@ -88,6 +93,17 @@ func parse(r io.Reader) ([]string, error) {
 		case tt == html.StartTagToken:
 			t := z.Token()
 
+			if t.Data == "head" {
+				insideHead = true
+			}
+
+			if t.Data == "base" && insideHead == true {
+				ok, url := getHref(t)
+				if ok {
+					base = url
+				}
+			}
+
 			// Check if the token is an <a> tag
 			isAnchor := t.Data == "a"
 			if !isAnchor {
@@ -100,15 +116,20 @@ func parse(r io.Reader) ([]string, error) {
 				continue
 			}
 
-			// Make sure the url begines in http**
-			// hasProto := strings.Index(url, "http") == 0
-			// if hasProto {
-			// 	ch <- url
-			// }
+			// Check type of link
+			// if relative, join it to base
+			_ = base
 
 			url = strings.TrimSpace(url)
 
 			result = append(result, url)
+
+		case tt == html.EndTagToken:
+			t := z.Token()
+			if t.Data == "head" {
+				insideHead = false
+			}
+
 		}
 	}
 }

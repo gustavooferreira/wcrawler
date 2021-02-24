@@ -59,9 +59,9 @@ func (c *Crawler) Run() {
 	var wg sync.WaitGroup
 
 	// Start stats goroutine
-	sm := NewStatsManager(c.WorkersCount, c.Depth)
-	wg.Add(1)
-	go c.StatsWriter(sm)
+	// sm := NewStatsManager(c.WorkersCount, c.Depth)
+	// wg.Add(1)
+	// go c.StatsWriter(sm)
 
 	// Start merger goroutine (deals with records manager)
 	wg.Add(1)
