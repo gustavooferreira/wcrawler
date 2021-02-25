@@ -5,23 +5,27 @@ type Record struct {
 	// Index allows easy referencing of records (used in the edges)
 	Index uint `json:"index"`
 	// ParentURL holds the URL for the first ParentURL found (there may be more)
-	ParentURL string `json:"parent_url"`
-	URL       string `json:"url"`
-	Host      string `json:"host"`
-	Depth     uint   `json:"depth"`
-	Edges     []uint `json:"edges"`
+	ParentURL  string `json:"parent_url"`
+	URL        string `json:"url"`
+	Host       string `json:"host"`
+	Depth      uint   `json:"depth"`
+	Edges      []uint `json:"edges"`
+	StatusCode int    `json:"statusCode"`
+	ErrString  string `json:"errString,omitempty"`
 }
 
 // RMEntry represents an entry in the RecordManager (external interface).
 type RMEntry struct {
-	ParentURL string
-	URL       URLEntity
-	Depth     uint
+	ParentURL  string
+	URL        URLEntity
+	Depth      uint
+	StatusCode int
+	ErrString  string
 }
 
 type URLEntity struct {
-	Host   string
-	String string
+	Base string
+	Raw  string
 }
 
 // Task is what gets sent to the channel for workers to pull data from the web

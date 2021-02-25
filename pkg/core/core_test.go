@@ -72,19 +72,19 @@ func TestExtractURL(t *testing.T) {
 		"url 2": {
 			parentURL:   "http://example.com",
 			url:         "https://test123.com/path/to/file",
-			expectedURL: core.URLEntity{Host: "test123.com", String: "https://test123.com/path/to/file"},
+			expectedURL: core.URLEntity{Base: "test123.com", Raw: "https://test123.com/path/to/file"},
 			expectedErr: false,
 		},
 		"url 3": {
 			parentURL:   "http://example.com",
 			url:         "/path/to/file",
-			expectedURL: core.URLEntity{Host: "example.com", String: "http://example.com/path/to/file"},
+			expectedURL: core.URLEntity{Base: "example.com", Raw: "http://example.com/path/to/file"},
 			expectedErr: false,
 		},
 		"url 4": {
 			parentURL:   "http://example.com/base",
 			url:         "path/to/file",
-			expectedURL: core.URLEntity{Host: "example.com", String: "http://example.com/base/path/to/file"},
+			expectedURL: core.URLEntity{Base: "example.com", Raw: "http://example.com/base/path/to/file"},
 			expectedErr: false,
 		},
 	}

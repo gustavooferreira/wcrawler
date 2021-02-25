@@ -68,7 +68,7 @@ func (sm *StatsManager) RunWriter() {
 		time.Sleep(time.Millisecond * 50)
 	}
 
-	fmt.Fprintln(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)
+	fmt.Fprintf(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)
 	sm.writer.Stop() // flush and stop rendering
 }
 

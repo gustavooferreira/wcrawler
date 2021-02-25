@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"sync"
 )
@@ -12,7 +11,7 @@ type Crawler struct {
 	connector Connector
 
 	// Read-only vars
-	BaseURL         string
+	InitialURL      string
 	File            string
 	Stats           bool
 	StayInSubdomain bool
@@ -24,24 +23,24 @@ type Crawler struct {
 	results chan Result
 }
 
-func NewCrawler(client *http.Client, baseURL string, file string, stats bool, stayinsubdomain bool, workersCount uint, depth uint) (*Crawler, error) {
+// NewCrawler returns a new Crawler.
+func NewCrawler(connector Connector, initialURL string, file string, stats bool, stayinsubdomain bool, workersCount uint, depth uint) (*Crawler, error) {
 
-	if !IsAbsoluteURL(baseURL) {
+	if !IsAbsoluteURL(initialURL) {
 		return nil, fmt.Errorf("URL provided is not valid")
 	}
 
 	if workersCount == 0 {
-		return nil, fmt.Errorf("the number of workers needs to be greater or equal to 1")
+		return nil, fmt.Errorf("the number of workers needs to be greater than 0")
 	}
 
 	if depth == 0 {
-		return nil, fmt.Errorf("recursion depth needs to be greater or equal to 1")
+		return nil, fmt.Errorf("recursion depth needs to be greater than 0")
 	}
 
-	connector := WebClient{client: client}
 	return &Crawler{
-			connector:       &connector,
-			BaseURL:         baseURL,
+			connector:       connector,
+			InitialURL:      initialURL,
 			File:            file,
 			Stats:           stats,
 			StayInSubdomain: stayinsubdomain,
@@ -50,6 +49,7 @@ func NewCrawler(client *http.Client, baseURL string, file string, stats bool, st
 		nil
 }
 
+// Run starts crawling.
 func (c *Crawler) Run() {
 
 	// Create channels and WaitGroup
@@ -80,9 +80,9 @@ func (c *Crawler) Run() {
 	wg.Wait()
 }
 
-// WorkerRun represents the workers doing work in a goroutine
-// Receives tasks in a channel and returns results on another
-// When tasks channel is closed, the worker returns
+// WorkerRun represents the workers crawling links in a goroutine.
+// Receives tasks in a channel and returns results on another.
+// When tasks channel is closed, the workers return.
 func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -126,7 +126,7 @@ func (c *Crawler) Merger() {
 	rm := NewRecordManager()
 
 	// Add baseURL to tasks channel
-	task := Task{URL: c.BaseURL, Depth: 0}
+	task := Task{URL: c.InitialURL, Depth: 0}
 	c.tasks <- task
 
 	// Keep local counter to know what jobs have been done.
@@ -150,9 +150,9 @@ func (c *Crawler) Merger() {
 			// we increase the jobCounter
 
 			for _, uu := range r.URLs {
-				rm.Match(uu.String)
+				rm.Match(uu.Raw)
 
-				u, err := url.Parse(uu.String)
+				u, err := url.Parse(uu.Raw)
 				if err != nil {
 					continue
 				}

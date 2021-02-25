@@ -58,7 +58,7 @@ func ExtractURL(parentURL string, rawURL string) (URLEntity, error) {
 			rawURL += "?" + u.RawQuery
 		}
 
-		return URLEntity{Host: u.Host, String: rawURL}, nil
+		return URLEntity{Base: u.Host, Raw: rawURL}, nil
 	}
 
 	parentU, err := url.Parse(parentURL)
@@ -73,7 +73,7 @@ func ExtractURL(parentURL string, rawURL string) (URLEntity, error) {
 			rawURL += "?" + u.RawQuery
 		}
 
-		return URLEntity{Host: parentU.Host, String: rawURL}, nil
+		return URLEntity{Base: parentU.Host, Raw: rawURL}, nil
 	} else {
 		u.Path = path.Join(parentU.Path, u.Path)
 		rawURL = fmt.Sprintf("%s://%s%s", parentU.Scheme, parentU.Host, u.Path)
@@ -82,6 +82,6 @@ func ExtractURL(parentURL string, rawURL string) (URLEntity, error) {
 			rawURL += "?" + u.RawQuery
 		}
 
-		return URLEntity{Host: parentU.Host, String: rawURL}, nil
+		return URLEntity{Base: parentU.Host, Raw: rawURL}, nil
 	}
 }
