@@ -44,7 +44,7 @@ func newExploreCmd() *cobra.Command {
 	exploreCmd.Flags().BoolVarP(&stats, "stats", "s", true, "show live stats")
 	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")
-	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout")
+	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout in seconds")
 	exploreCmd.Flags().UintVarP(&depth, "depth", "d", 10, "depth of recursion")
 
 	return exploreCmd
