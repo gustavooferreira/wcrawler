@@ -35,7 +35,7 @@ func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, 
 
 	statusCode = resp.StatusCode
 
-	if statusCode != 200 {
+	if statusCode >= 200 && statusCode < 300 {
 		return statusCode, links, nil
 	}
 
