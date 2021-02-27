@@ -18,15 +18,16 @@ type StatsManager struct {
 
 	// This is the total number of links still to be checked
 	// This number will keep increasing as new links are found.
-	linksInQueue   int
-	linksCount     int
-	errorCounts    int
-	workersRunning int
+	linksInQueue       int
+	linksCount         int
+	errorCounts        int
+	workersRunning     int
+	totalRequestsCount int
 	// current level of depth
 	depth int
 
 	// List of errors that happen during crawling
-	errors []error
+	errors [10]error
 
 	// --------------
 	// Read only vars
@@ -106,6 +107,18 @@ func IncDecWorkersRunning(value int) func(*StatsManager) {
 	}
 }
 
+func SetTotalRequestsCount(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.totalRequestsCount = value
+	}
+}
+
+func IncDecTotalRequestsCount(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.totalRequestsCount += value
+	}
+}
+
 func SetDepth(value int) func(*StatsManager) {
 	return func(sm *StatsManager) {
 		sm.depth = value
@@ -123,7 +136,7 @@ func IncDecDepth(value int) func(*StatsManager) {
 func (sm *StatsManager) RunWriter() {
 	sm.writer.Start()
 
-	fmtStr := "App State: %13s      Workers: (%3d/%3d)\nLinks in Queue: %8d      Depth:     (%2d/%2d)\nLinks in Cache: %8d      Errors: %10d\n"
+	fmtStr := "Crawler State: %11s      Workers: (%4d/%4d)\nTotal Req Count: %9d\nLinks in Queue: %10d      Depth:     (%3d/%3d)\nLinks in Cache: %10d      Errors: %12d\n"
 
 	for {
 		sm.Lock()
@@ -135,7 +148,7 @@ func (sm *StatsManager) RunWriter() {
 		// - one error per line
 		// - two errors, etc
 
-		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.workersRunning, sm.totalWorkersCount, sm.linksInQueue,
+		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount, sm.linksInQueue,
 			sm.depth, sm.maxDepthLevel, sm.linksCount, sm.errorCounts)
 		sm.Unlock()
 

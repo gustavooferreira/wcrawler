@@ -3,8 +3,6 @@ package core
 import (
 	"fmt"
 	"net/url"
-	"path"
-	"strings"
 )
 
 // ----------
@@ -51,50 +49,26 @@ func ExtractURL(baseURL string, rawURL string) (URLEntity, error) {
 		return URLEntity{}, fmt.Errorf("URL not in a valid format: %s", err)
 	}
 
-	// Check if rawURL is of one of those types we don't want to handle, i.e., mailto, telephone, etc.
-	if u.Opaque != "" {
-		return URLEntity{}, fmt.Errorf("URL not in a processable format")
+	// Check if rawURL is one of those types we don't want to handle, i.e., mailto, telephone, etc.
+	if u.Opaque != "" || (u.Scheme != "" && u.Scheme != "http" && u.Scheme != "https") {
+		return URLEntity{}, fmt.Errorf("URL not in a supported format")
 	}
 
-	// Check whether rawURL is absolute (if it is, get ride of the fragment part)
-	if (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
-		rawURL = fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path)
-
-		if u.RawQuery != "" {
-			rawURL += "?" + u.RawQuery
-		}
-
-		return URLEntity{Host: u.Host, Raw: rawURL}, nil
-	}
-
-	// If we reached here, it's because URL is in relative format
 	baseU, err := url.Parse(baseURL)
 	if err != nil {
 		return URLEntity{}, fmt.Errorf("base URL not in a valid format: %s", err)
 	}
 
-	if baseU.Path == "" {
-		baseU.Path = "/"
+	if baseU.Opaque != "" || (baseU.Scheme != "" && baseU.Scheme != "http" && baseU.Scheme != "https") {
+		return URLEntity{}, fmt.Errorf("URL not in a supported format")
 	}
 
-	// Relative URL relative to host
-	if strings.HasPrefix(u.Path, "/") {
-		rawURL = fmt.Sprintf("%s://%s%s", baseU.Scheme, baseU.Host, u.Path)
+	mergedU := baseU.ResolveReference(u)
+	rawURL = fmt.Sprintf("%s://%s%s", mergedU.Scheme, mergedU.Host, mergedU.Path)
 
-		if u.RawQuery != "" {
-			rawURL += "?" + u.RawQuery
-		}
-
-		return URLEntity{Host: baseU.Host, Raw: rawURL}, nil
+	if mergedU.RawQuery != "" {
+		rawURL += "?" + mergedU.RawQuery
 	}
 
-	// Relative URL relative to current document
-	u.Path = path.Join(baseU.Path, u.Path)
-	rawURL = fmt.Sprintf("%s://%s%s", baseU.Scheme, baseU.Host, u.Path)
-
-	if u.RawQuery != "" {
-		rawURL += "?" + u.RawQuery
-	}
-
-	return URLEntity{Host: baseU.Host, Raw: rawURL}, nil
+	return URLEntity{Host: mergedU.Host, Raw: rawURL}, nil
 }

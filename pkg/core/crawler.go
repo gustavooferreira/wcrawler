@@ -122,7 +122,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 			c.results <- r
 
 			if c.Stats {
-				c.statsManager.UpdateStats(IncDecWorkersRunning(-1))
+				c.statsManager.UpdateStats(IncDecWorkersRunning(-1), IncDecTotalRequestsCount(1))
 			}
 		}
 
@@ -163,6 +163,10 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 
 	jobsCounter++
 
+	if c.Stats {
+		c.statsManager.UpdateStats(SetLinksInQueue(jobsCounter))
+	}
+
 	// ---------
 
 	end := false
@@ -173,6 +177,13 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 			// Got a response means we can decrement the job counter
 			jobsCounter--
 
+			// Update parent URL entry in Record Manager
+			err = rm.Update(r.ParentURL, r.StatusCode, r.Err)
+			if err != nil {
+				// log
+				// continue
+			}
+
 			// when processing the new links, make sure every time we queue a new link
 			// we increase the jobCounter
 
@@ -182,38 +193,27 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 			if r.Depth < c.Depth && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
 				for _, uu := range r.URLs {
 					// if already in the cache, we don't want to query it again
-					if rm.Visited(uu.Raw) {
-						continue
+					if !rm.Exists(uu.Raw) {
+						queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
+						jobsCounter++
+
+						rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth}
+						rm.AddRecord(rme)
 					}
-
-					queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
-					jobsCounter++
 				}
-			}
-
-			// Update parent URL entry in Record Manager
-			err = rm.Update(r.ParentURL, r.StatusCode, r.Err)
-			if err != nil {
-				// log
-				// continue
-			}
-
-			// Add entries
-			// Add new links to RecordManager
-			for _, uu := range r.URLs {
-				if rm.Exists(uu.Raw) {
-					continue
-				}
-
-				rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth}
-				rm.AddRecord(rme)
 			}
 
 			if c.Stats {
+				errCount := 0
+				if r.Err != nil || r.StatusCode < 200 || r.StatusCode >= 300 {
+					errCount = 1
+				}
+
 				c.statsManager.UpdateStats(
 					SetLinksInQueue(jobsCounter),
 					SetLinksCount(rm.Count()),
-					SetDepth(r.Depth))
+					SetDepth(r.Depth),
+					IncDecErrorsCount(errCount))
 			}
 
 			// fill tasks channel until either channel blocks or queue is empty
@@ -251,8 +251,6 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	}
 
 	// Write to file
-	// Create os.File to write to and pass to crawler instead.
-
 	err = rm.SaveToWriter(c.IOWriter)
 	if err != nil {
 		// log

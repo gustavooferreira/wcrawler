@@ -12,15 +12,14 @@ type Record struct {
 	Edges      []uint `json:"edges"`
 	StatusCode int    `json:"statusCode"`
 	ErrString  string `json:"errString,omitempty"`
-	Visited    bool   `json:"-"`
 }
 
 // RMEntry represents an entry in the RecordManager (external interface).
 type RMEntry struct {
 	ParentURL  string
-	StatusCode int
 	URL        URLEntity
 	Depth      int
+	StatusCode int
 	ErrString  string
 }
 

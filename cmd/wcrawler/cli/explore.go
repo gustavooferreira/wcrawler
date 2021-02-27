@@ -12,7 +12,7 @@ import (
 func newExploreCmd() *cobra.Command {
 	var (
 		filePath        string
-		stats           bool
+		nostats         bool
 		workers         uint
 		timeout         uint
 		depth           uint
@@ -39,7 +39,7 @@ func newExploreCmd() *cobra.Command {
 			defer f.Close()
 
 			connector := core.NewWebClient(client)
-			c, err := core.NewCrawler(connector, url, f, stats, stayinsubdomain, int(workers), int(depth))
+			c, err := core.NewCrawler(connector, url, f, !nostats, stayinsubdomain, int(workers), int(depth))
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func newExploreCmd() *cobra.Command {
 	}
 
 	exploreCmd.Flags().StringVarP(&filePath, "output", "o", "./web_graph.json", "file to save results")
-	exploreCmd.Flags().BoolVarP(&stats, "stats", "s", true, "show live stats")
+	exploreCmd.Flags().BoolVarP(&nostats, "nostats", "s", false, "don't show live stats")
 	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")
 	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout in seconds")
