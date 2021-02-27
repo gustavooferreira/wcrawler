@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"sync"
 
 	"github.com/oleiade/lane"
@@ -14,7 +14,7 @@ type Crawler struct {
 
 	// Read-only vars
 	InitialURL      string
-	File            string
+	IOWriter        io.Writer
 	Stats           bool
 	StayInSubdomain bool
 	WorkersCount    int
@@ -28,7 +28,7 @@ type Crawler struct {
 }
 
 // NewCrawler returns a new Crawler.
-func NewCrawler(connector Connector, initialURL string, file string, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
+func NewCrawler(connector Connector, initialURL string, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
 
 	if !IsAbsoluteURL(initialURL) {
 		return nil, fmt.Errorf("URL provided is not valid")
@@ -45,7 +45,7 @@ func NewCrawler(connector Connector, initialURL string, file string, stats bool,
 	return &Crawler{
 			connector:       connector,
 			InitialURL:      initialURL,
-			File:            file,
+			IOWriter:        ioWriter,
 			Stats:           stats,
 			StayInSubdomain: stayinsubdomain,
 			WorkersCount:    workersCount,
@@ -242,10 +242,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	// Write to file
 	// Create os.File to write to and pass to crawler instead.
 
-	f, err := os.Create("/tmp/graph.json")
-	defer f.Close()
-
-	err = rm.SaveToWriter(f)
+	err = rm.SaveToWriter(c.IOWriter)
 	if err != nil {
 		// log
 	}

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gustavooferreira/wcrawler/pkg/core"
@@ -10,7 +11,7 @@ import (
 
 func newExploreCmd() *cobra.Command {
 	var (
-		file            string
+		filePath        string
 		stats           bool
 		workers         uint
 		timeout         uint
@@ -30,8 +31,15 @@ func newExploreCmd() *cobra.Command {
 				Timeout: time.Second * time.Duration(timeout),
 			}
 
+			f, err := os.Create(filePath)
+			if err != nil {
+				return err
+			}
+
+			defer f.Close()
+
 			connector := core.NewWebClient(client)
-			c, err := core.NewCrawler(connector, url, file, stats, stayinsubdomain, int(workers), int(depth))
+			c, err := core.NewCrawler(connector, url, f, stats, stayinsubdomain, int(workers), int(depth))
 			if err != nil {
 				return err
 			}
@@ -40,7 +48,7 @@ func newExploreCmd() *cobra.Command {
 		},
 	}
 
-	exploreCmd.Flags().StringVarP(&file, "output", "o", "./web_graph.json", "file to save results")
+	exploreCmd.Flags().StringVarP(&filePath, "output", "o", "./web_graph.json", "file to save results")
 	exploreCmd.Flags().BoolVarP(&stats, "stats", "s", true, "show live stats")
 	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")
