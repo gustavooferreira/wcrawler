@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -32,7 +33,7 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 			Index:      index,
 			ParentURL:  entry.ParentURL,
 			URL:        entry.URL.Raw,
-			Host:       entry.URL.Base,
+			Host:       entry.URL.Host,
 			Depth:      entry.Depth,
 			StatusCode: entry.StatusCode,
 			ErrString:  entry.ErrString,
@@ -55,10 +56,34 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 	}
 }
 
-// Match checks whether this URL already exists in the cache
-func (rm *RecordManager) Match(rawURL string) bool {
+// Visited checks whether this URL has already been visited.
+func (rm *RecordManager) Visited(rawURL string) bool {
+	elem, ok := rm.Records[rawURL]
+	if ok {
+		return elem.Visited
+	}
+	return false
+}
+
+// Exists checks whether this URL exists in the table.
+func (rm *RecordManager) Exists(rawURL string) bool {
 	_, ok := rm.Records[rawURL]
 	return ok
+}
+
+// Update updates entry in the table.
+func (rm *RecordManager) Update(rawURL string, statusCode int, err error) error {
+	if elem, ok := rm.Records[rawURL]; ok {
+		elem.StatusCode = statusCode
+
+		if err != nil {
+			elem.ErrString = err.Error()
+		}
+
+		rm.Records[rawURL] = elem
+		return nil
+	}
+	return fmt.Errorf("record not found")
 }
 
 // Get returns a record from the Record Manager.

@@ -1,11 +1,8 @@
 package core
 
 import (
-	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"golang.org/x/net/html"
 )
@@ -35,28 +32,30 @@ func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, 
 
 	statusCode = resp.StatusCode
 
-	if statusCode >= 200 && statusCode < 300 {
+	if statusCode < 200 || statusCode >= 300 {
 		return statusCode, links, nil
 	}
 
-	links, err = c.parse(resp.Body)
+	links, err = c.parse(rawURL, resp.Body)
 
 	return statusCode, links, err
 }
 
 // parse parses the webpage looking for links.
-func (c *WebClient) parse(r io.Reader) (links []URLEntity, err error) {
-	// Parse <base> tag if it exists
+func (c *WebClient) parse(rawURL string, r io.Reader) (links []URLEntity, err error) {
+	// Parse <base> tag inside <head> tag if it exists
 	// Parse all <a> tags
 	// Cater for the fact that a <a> link might be a mailto or a phone or something else.
 	// Check if "Opaque" field in URL struct is set
 	// Validate whether they are absolute or relative tags. Also check if the relative tags start with a /
-	// same webpages will have the <base> tag inside <head> which should be used when joining relative URLs.
 
 	// TODO: Make sure body is utf-8 encoded
 
 	insideHead := false
-	baseURL := ""
+	baseURL, err := ExtractParentURL(rawURL)
+	if err != nil {
+		return links, err
+	}
 
 	links = []URLEntity{}
 
@@ -76,10 +75,15 @@ func (c *WebClient) parse(r io.Reader) (links []URLEntity, err error) {
 				insideHead = true
 			}
 
+			// This only works assuming href in <base> is absolute.
+			// TODO: confirm this in the HTML spec.
 			if t.Data == "base" && insideHead == true {
 				ok, rawURL := getHref(t)
 				if ok {
-					baseURL = rawURL
+					baseURL2, err := ExtractParentURL(rawURL)
+					if err == nil {
+						baseURL = baseURL2
+					}
 				}
 			}
 
@@ -95,20 +99,15 @@ func (c *WebClient) parse(r io.Reader) (links []URLEntity, err error) {
 				continue
 			}
 
-			rawURL = strings.TrimSpace(rawURL)
-			// Check type of link
-			// if relative, join it to base
-			_ = baseURL
+			// rawURL = strings.TrimSpace(rawURL)
 
-			u, err := url.Parse(rawURL)
+			// Deals with absolute and relative URLs.
+			urlEntity, err := ExtractURL(baseURL, rawURL)
 			if err != nil {
-
+				continue
 			}
 
-			// if link is relative, need to join with base url first before doing this.
-			base := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
-
-			links = append(links, URLEntity{Base: base, Raw: rawURL})
+			links = append(links, urlEntity)
 
 		case tt == html.EndTagToken:
 			t := z.Token()
@@ -120,9 +119,9 @@ func (c *WebClient) parse(r io.Reader) (links []URLEntity, err error) {
 	}
 }
 
-// getHref returns the href attribute from a Token
+// getHref returns the href attribute from a Token.
 func getHref(t html.Token) (ok bool, href string) {
-	// Iterate over all of the Token's attributes until we find an "href"
+	// Iterate over all of the Token's attributes until it finds an "href"
 	for _, a := range t.Attr {
 		if a.Key == "href" {
 			href = a.Val
@@ -131,17 +130,3 @@ func getHref(t html.Token) (ok bool, href string) {
 	}
 	return
 }
-
-// for _, link := range rawLinks {
-
-// 	u, err := url.Parse(link)
-// 	if err != nil {
-// 		fmt.Printf("ERROR: this one was not cool: %s", link)
-// 		continue
-// 	}
-
-// 	// TODO: take care of relative links here
-
-// 	l := URLEntity{Host: u.Host, Raw: link}
-// 	result = append(result, l)
-// }

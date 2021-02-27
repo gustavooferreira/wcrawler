@@ -7,7 +7,9 @@ const htmlBody1 = `
 <title>Title</title>
 </head>
 <body>
-<a href="http://www.example.com/path1">link1</p>
+<a href="http://www.example.com/path1#frag1">link1</p>
+<a href="/path/to/file999">link1</p>
+<a href="path/to/file2#frag123">link1</p>
 </body>
 </html>
 `

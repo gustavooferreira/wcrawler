@@ -12,33 +12,38 @@ type Record struct {
 	Edges      []uint `json:"edges"`
 	StatusCode int    `json:"statusCode"`
 	ErrString  string `json:"errString,omitempty"`
+	Visited    bool   `json:"-"`
 }
 
 // RMEntry represents an entry in the RecordManager (external interface).
 type RMEntry struct {
 	ParentURL  string
+	StatusCode int
 	URL        URLEntity
 	Depth      uint
-	StatusCode int
 	ErrString  string
 }
 
+// URLEntity represents a URL.
 type URLEntity struct {
-	Base string
-	Raw  string
+	// Host represents the Host portion of the URL
+	Host string
+	// Raw represents the entire URL
+	Raw string
 }
 
-// Task is what gets sent to the channel for workers to pull data from the web
+// Task is what gets sent to the channel for workers to pull data from the web.
 type Task struct {
 	URL   string
 	Depth uint
 }
 
-// URL might be an absolute URL or a relative URL.
+// Result is what workers return in a channel.
 type Result struct {
 	ParentURL  string
 	StatusCode int
 	URLs       []URLEntity
-	Depth      uint
-	Err        error
+	// Depth of the child URLs
+	Depth uint
+	Err   error
 }

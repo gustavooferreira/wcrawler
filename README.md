@@ -65,6 +65,7 @@ wcrawler view -f /tmp/result.json
 - github.com/spf13/cobra       [CLI args and flags parsing]
 - github.com/stretchr/testify  [writing unit tests]
 - golang.org/x/net             [HTML parsing]
+- github.com/oleiade/lane      [Provides a Queue data structure implementation]
 ```
 
 ---

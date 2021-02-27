@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/gustavooferreira/wcrawler/pkg/core"
@@ -20,12 +22,18 @@ func TestWebClient(t *testing.T) {
 		expectedLinks      []core.URLEntity
 	}{
 		"parse 1": {
-			path:               "/",
+			path:               "/random/path",
 			htmlBody:           htmlBody1,
 			expectedStatusCode: 200,
 			expectedLinks: []core.URLEntity{{
-				Base: "http://www.example.com",
+				Host: "www.example.com",
 				Raw:  "http://www.example.com/path1",
+			}, {
+				Host: "%s",
+				Raw:  "%s/path/to/file999",
+			}, {
+				Host: "%s",
+				Raw:  "%s/random/path/path/to/file2",
 			}},
 			expectedErr: false,
 		},
@@ -44,12 +52,30 @@ func TestWebClient(t *testing.T) {
 
 			queryURL := ts.URL + test.path
 
+			u, err := url.Parse(ts.URL)
+			if err != nil {
+				require.FailNow(t, "failed parsing fake server URL")
+			}
+
+			host := u.Host
+
 			statusCode, links, err := wc.GetLinks(queryURL)
 
 			if test.expectedErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
+			}
+
+			// Replace URLEntity's Host and Raw with the URL provided by test server
+			for i, l := range test.expectedLinks {
+				if strings.Contains(l.Host, "%s") {
+					test.expectedLinks[i].Host = fmt.Sprintf(l.Host, host)
+				}
+
+				if strings.Contains(l.Raw, "%s") {
+					test.expectedLinks[i].Raw = fmt.Sprintf(l.Raw, ts.URL)
+				}
 			}
 
 			assert.Equal(t, test.expectedStatusCode, statusCode)

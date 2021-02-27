@@ -24,11 +24,15 @@ type StatsManager struct {
 	workersRunning uint
 	// current level of depth
 	depth uint
-	// depth level provided by user
-	maxDepthLevel uint
 
+	// List of errors that happen during crawling
+	errors []error
+
+	// --------------
 	// Read only vars
 	totalWorkersCount uint
+	// depth level provided by user
+	maxDepthLevel uint
 }
 
 func NewStatsManager(totalWorkersCount uint, depth uint) *StatsManager {
@@ -39,12 +43,13 @@ func NewStatsManager(totalWorkersCount uint, depth uint) *StatsManager {
 }
 
 // This updates the stats counters, this is cumulative, meaning only put the numbers to add to the total
-// workersRunning can be negative, when they finish processing they will decrement this.
+// workersRunningCounter can be negative, when they finish processing they will decrement this.
 func (sm *StatsManager) UpdateStats(state AppState, linksInQueueInc uint, linksCountInc uint, errorCountsInc uint, workersRunningCounter int) {
 	sm.Lock()
 	defer sm.Unlock()
 
 	// if AppState == 0 then no update on that
+	sm.workersRunning += uint(workersRunningCounter)
 
 }
 
@@ -65,10 +70,10 @@ func (sm *StatsManager) RunWriter() {
 			break
 		}
 
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 200)
 	}
 
-	fmt.Fprintf(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)
+	// fmt.Fprintf(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)
 	sm.writer.Stop() // flush and stop rendering
 }
 

@@ -2,8 +2,10 @@ package core
 
 import (
 	"fmt"
-	"net/url"
+	"os"
 	"sync"
+
+	"github.com/oleiade/lane"
 )
 
 // Crawler brings everything together and is responsible for starting goroutines and manage them.
@@ -17,6 +19,8 @@ type Crawler struct {
 	StayInSubdomain bool
 	WorkersCount    uint
 	Depth           uint
+
+	statsManager *StatsManager
 
 	// Channels
 	tasks   chan Task
@@ -59,9 +63,10 @@ func (c *Crawler) Run() {
 	var wg sync.WaitGroup
 
 	// Start stats goroutine
-	// sm := NewStatsManager(c.WorkersCount, c.Depth)
-	// wg.Add(1)
-	// go c.StatsWriter(sm)
+	sm := NewStatsManager(c.WorkersCount, c.Depth)
+	wg.Add(1)
+	c.statsManager = sm
+	go c.StatsWriter(sm)
 
 	// Start merger goroutine (deals with records manager)
 	wg.Add(1)
@@ -93,34 +98,42 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 		case t, ok := <-c.tasks:
 			if !ok {
 				end = true
+				break
 			}
+
+			c.statsManager.UpdateStats(0, 0, 0, 0, 1)
 
 			statusCode, links, err := c.connector.GetLinks(t.URL)
 
-			// handle error
-			if err != nil {
-
+			r := Result{
+				ParentURL:  t.URL,
+				StatusCode: statusCode,
+				URLs:       links,
+				Depth:      t.Depth,
+				Err:        err,
 			}
 
-			r := Result{ParentURL: t.URL, StatusCode: statusCode, URLs: links, Depth: t.Depth + 1}
-
 			c.results <- r
+			c.statsManager.UpdateStats(0, 0, 0, 0, -1)
 		}
 
 		if end {
 			break
 		}
 	}
-	// Get the links from the URL
-
-	// if URLs are relative, make sure to join them with ParentURL
-
-	// Returns a list of URLs (and some stats data, like error, status code, etc)
 }
 
 // Merger gets the results from the workers (links) and keeps all the relevant information
 // feeding the new links to workers via another channel.
 func (c *Crawler) Merger() {
+
+	// Keep local counter to know what jobs have been done.
+	// when counter reaches zero it means there are no more jobs to be processed
+	// and the merger can exit.
+	jobsCounter := 0
+
+	// Create queue for queuing jobs
+	queue := lane.NewQueue()
 
 	// Initialize record manager
 	rm := NewRecordManager()
@@ -129,60 +142,107 @@ func (c *Crawler) Merger() {
 	task := Task{URL: c.InitialURL, Depth: 0}
 	c.tasks <- task
 
-	// Keep local counter to know what jobs have been done.
-	// when counter reaches zero it means there are no more jobs to be processed
-	// and the merger can exit.
-	// It starts at 1 because we queued the first job already
-	jobsCounter := 1
+	// Add baseURL as an entry to Record Manager
+	urlEntity, err := ExtractURL("", c.InitialURL)
+	if err != nil {
+		// Clean up (close channels)
+	}
 
-	// keep local queue, where next links will be queued
-	//
+	re := RMEntry{ParentURL: "", URL: urlEntity, Depth: 0}
+	rm.AddRecord(re)
+
+	jobsCounter++
+
+	// ---------
 
 	end := false
 
 	for {
 		select {
 		case r := <-c.results:
-			// Got a response means we can decrement the job counter.
+			// Got a response means we can decrement the job counter
 			jobsCounter--
 
 			// when processing the new links, make sure every time we queue a new link
 			// we increase the jobCounter
 
-			for _, uu := range r.URLs {
-				rm.Match(uu.Raw)
+			// Check which new jobs to queue
+			// Check depth, if equal or greater then set, then don't queue more
+			// Also check that we didn't get an error or an unexpected status code
+			if r.Depth < c.Depth && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
+				for _, uu := range r.URLs {
+					// if already in the cache, we don't want to query it again
+					if rm.Visited(uu.Raw) {
+						continue
+					}
 
-				u, err := url.Parse(uu.Raw)
-				if err != nil {
-					continue
+					queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
+					jobsCounter++
 				}
-				fmt.Printf("URL: %+v\n", u)
 			}
 
-			// check depth, if equal or greater then set, then don't queue more
+			// Update parent URL entry in Record Manager
+			err = rm.Update(r.ParentURL, r.StatusCode, r.Err)
+			if err != nil {
+				// log
+				continue
+			}
 
-			// check if URLs in rm if not, add them
+			// Add entries
+			// Add new links to RecordManager
+			for _, uu := range r.URLs {
+				if rm.Exists(uu.Raw) {
+					continue
+				}
 
-			// update the stats on what it has found so far to be printed on the screen.
+				rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth}
+				rm.AddRecord(rme)
+			}
 
-			fmt.Printf("URLs: %+v\n", r.URLs)
+			// fill tasks channel until either channel blocks or queue is empty
+			for {
+				// Check if channel is full
+				// This is fine because this goroutine is the only one writing to the channel,
+				// so it won't block when we actually try to write to the channel.
+				// If it says the channel is full and the very next millisecond it's not,
+				// there is no problem as we will come back to this to refill it.
+				if len(c.tasks) == cap(c.tasks) {
+					break
+				}
 
-			// check if we are done
+				// Check if we can dequeue an item from the queue, if yes, try to push it to the channel
+				if queue.Empty() {
+					// No more items to dequeue
+					break
+				} else {
+					c.tasks <- queue.Dequeue().(Task)
+				}
+			}
+
+			// check if we are done (i.e., no more jobs)
 			if jobsCounter == 0 {
 				close(c.tasks)
 				end = true
 			}
 		}
 
-		// select with default to push as many items from the queue to the channel
-		// as possible.
+		// update the stats on what it has found so far to be printed on the screen.
 
 		if end {
 			break
 		}
 	}
 
-	// Write to file if enabled
+	// Write to file
+	// Create os.File to write to and pass to crawler instead.
+
+	f, err := os.Create("/tmp/graph.json")
+	defer f.Close()
+
+	err = rm.SaveToWriter(f)
+	if err != nil {
+		// log
+	}
 }
 
 // StatsWriter writes stats to a io.Writer (e.g. os.Stdout)
