@@ -123,11 +123,20 @@ func IncDecDepth(value int) func(*StatsManager) {
 func (sm *StatsManager) RunWriter() {
 	sm.writer.Start()
 
+	fmtStr := "App State: %13s      Workers: (%3d/%3d)\nLinks in Queue: %8d      Depth:     (%2d/%2d)\nLinks in Cache: %8d      Errors: %10d\n"
+
 	for {
 		sm.Lock()
-		fmt.Fprintf(sm.writer, "App State: %s      Workers (%d/%d)\nLinks in Queue: %5d   Errors: (%d/%d)\n",
-			sm.state, sm.workersRunning, sm.totalWorkersCount, sm.linksInQueue,
-			sm.errorCounts, sm.linksCount)
+
+		// if len(sm.errors) != 0
+		// append string at the end with the errors formatted
+		// Only show last 10 errors
+		// Errors (last 10):
+		// - one error per line
+		// - two errors, etc
+
+		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.workersRunning, sm.totalWorkersCount, sm.linksInQueue,
+			sm.depth, sm.maxDepthLevel, sm.linksCount, sm.errorCounts)
 		sm.Unlock()
 
 		// Only stop when AppState == Finished!

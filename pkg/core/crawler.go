@@ -63,10 +63,14 @@ func (c *Crawler) Run() {
 	var wg sync.WaitGroup
 
 	// Start stats goroutine
-	sm := NewStatsManager(c.WorkersCount, c.Depth)
-	wg.Add(1)
-	c.statsManager = sm
-	go c.StatsWriter(&wg)
+	if c.Stats {
+		sm := NewStatsManager(c.WorkersCount, c.Depth)
+		wg.Add(1)
+		c.statsManager = sm
+		go c.StatsWriter(&wg)
+
+		c.statsManager.UpdateStats(SetAppState(AppState_Running))
+	}
 
 	// Start merger goroutine (deals with records manager)
 	wg.Add(1)
@@ -101,7 +105,9 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 				break
 			}
 
-			c.statsManager.UpdateStats(IncDecWorkersRunning(1))
+			if c.Stats {
+				c.statsManager.UpdateStats(IncDecWorkersRunning(1))
+			}
 
 			statusCode, links, err := c.connector.GetLinks(t.URL)
 
@@ -114,7 +120,10 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 			}
 
 			c.results <- r
-			c.statsManager.UpdateStats(IncDecWorkersRunning(-1))
+
+			if c.Stats {
+				c.statsManager.UpdateStats(IncDecWorkersRunning(-1))
+			}
 		}
 
 		if end {
@@ -200,10 +209,12 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 				rm.AddRecord(rme)
 			}
 
-			c.statsManager.UpdateStats(SetLinksInQueue(jobsCounter))
-			c.statsManager.UpdateStats(SetLinksCount(rm.Count()))
-
-			// c.statsManager.UpdateStats(0, jobsCounter, rm.Count(), 0, -1)
+			if c.Stats {
+				c.statsManager.UpdateStats(
+					SetLinksInQueue(jobsCounter),
+					SetLinksCount(rm.Count()),
+					SetDepth(r.Depth))
+			}
 
 			// fill tasks channel until either channel blocks or queue is empty
 			for {
@@ -247,7 +258,9 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 		// log
 	}
 
-	c.statsManager.UpdateStats(SetAppState(AppState_Finished))
+	if c.Stats {
+		c.statsManager.UpdateStats(SetAppState(AppState_Finished))
+	}
 }
 
 // StatsWriter writes stats to a io.Writer (e.g. os.Stdout)
