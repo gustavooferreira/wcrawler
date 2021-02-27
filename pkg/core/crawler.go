@@ -17,8 +17,8 @@ type Crawler struct {
 	File            string
 	Stats           bool
 	StayInSubdomain bool
-	WorkersCount    uint
-	Depth           uint
+	WorkersCount    int
+	Depth           int
 
 	statsManager *StatsManager
 
@@ -28,7 +28,7 @@ type Crawler struct {
 }
 
 // NewCrawler returns a new Crawler.
-func NewCrawler(connector Connector, initialURL string, file string, stats bool, stayinsubdomain bool, workersCount uint, depth uint) (*Crawler, error) {
+func NewCrawler(connector Connector, initialURL string, file string, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
 
 	if !IsAbsoluteURL(initialURL) {
 		return nil, fmt.Errorf("URL provided is not valid")
@@ -66,11 +66,11 @@ func (c *Crawler) Run() {
 	sm := NewStatsManager(c.WorkersCount, c.Depth)
 	wg.Add(1)
 	c.statsManager = sm
-	go c.StatsWriter(sm)
+	go c.StatsWriter(&wg)
 
 	// Start merger goroutine (deals with records manager)
 	wg.Add(1)
-	go c.Merger()
+	go c.Merger(&wg)
 
 	// Start workers (n workers)
 	for i := 0; i < int(c.WorkersCount); i++ {
@@ -101,7 +101,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 				break
 			}
 
-			c.statsManager.UpdateStats(0, 0, 0, 0, 1)
+			c.statsManager.UpdateStats(IncDecWorkersRunning(1))
 
 			statusCode, links, err := c.connector.GetLinks(t.URL)
 
@@ -114,7 +114,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 			}
 
 			c.results <- r
-			c.statsManager.UpdateStats(0, 0, 0, 0, -1)
+			c.statsManager.UpdateStats(IncDecWorkersRunning(-1))
 		}
 
 		if end {
@@ -125,7 +125,8 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 
 // Merger gets the results from the workers (links) and keeps all the relevant information
 // feeding the new links to workers via another channel.
-func (c *Crawler) Merger() {
+func (c *Crawler) Merger(wg *sync.WaitGroup) {
+	defer wg.Done()
 
 	// Keep local counter to know what jobs have been done.
 	// when counter reaches zero it means there are no more jobs to be processed
@@ -185,7 +186,7 @@ func (c *Crawler) Merger() {
 			err = rm.Update(r.ParentURL, r.StatusCode, r.Err)
 			if err != nil {
 				// log
-				continue
+				// continue
 			}
 
 			// Add entries
@@ -198,6 +199,11 @@ func (c *Crawler) Merger() {
 				rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth}
 				rm.AddRecord(rme)
 			}
+
+			c.statsManager.UpdateStats(SetLinksInQueue(jobsCounter))
+			c.statsManager.UpdateStats(SetLinksCount(rm.Count()))
+
+			// c.statsManager.UpdateStats(0, jobsCounter, rm.Count(), 0, -1)
 
 			// fill tasks channel until either channel blocks or queue is empty
 			for {
@@ -243,9 +249,12 @@ func (c *Crawler) Merger() {
 	if err != nil {
 		// log
 	}
+
+	c.statsManager.UpdateStats(SetAppState(AppState_Finished))
 }
 
 // StatsWriter writes stats to a io.Writer (e.g. os.Stdout)
-func (c *Crawler) StatsWriter(sm *StatsManager) {
-	sm.RunWriter()
+func (c *Crawler) StatsWriter(wg *sync.WaitGroup) {
+	defer wg.Done()
+	c.statsManager.RunWriter()
 }

@@ -31,7 +31,7 @@ func newExploreCmd() *cobra.Command {
 			}
 
 			connector := core.NewWebClient(client)
-			c, err := core.NewCrawler(connector, url, file, stats, stayinsubdomain, workers, depth)
+			c, err := core.NewCrawler(connector, url, file, stats, stayinsubdomain, int(workers), int(depth))
 			if err != nil {
 				return err
 			}

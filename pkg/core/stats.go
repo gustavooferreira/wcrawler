@@ -18,39 +18,104 @@ type StatsManager struct {
 
 	// This is the total number of links still to be checked
 	// This number will keep increasing as new links are found.
-	linksInQueue   uint
-	linksCount     uint
-	errorCounts    uint
-	workersRunning uint
+	linksInQueue   int
+	linksCount     int
+	errorCounts    int
+	workersRunning int
 	// current level of depth
-	depth uint
+	depth int
 
 	// List of errors that happen during crawling
 	errors []error
 
 	// --------------
 	// Read only vars
-	totalWorkersCount uint
+	totalWorkersCount int
 	// depth level provided by user
-	maxDepthLevel uint
+	maxDepthLevel int
 }
 
-func NewStatsManager(totalWorkersCount uint, depth uint) *StatsManager {
+func NewStatsManager(totalWorkersCount int, depth int) *StatsManager {
 	sm := StatsManager{state: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
 	sm.writer = uilive.New()
 
 	return &sm
 }
 
-// This updates the stats counters, this is cumulative, meaning only put the numbers to add to the total
-// workersRunningCounter can be negative, when they finish processing they will decrement this.
-func (sm *StatsManager) UpdateStats(state AppState, linksInQueueInc uint, linksCountInc uint, errorCountsInc uint, workersRunningCounter int) {
+// UpdateStats updates the stats.
+func (sm *StatsManager) UpdateStats(updates ...func(*StatsManager)) {
 	sm.Lock()
 	defer sm.Unlock()
 
-	// if AppState == 0 then no update on that
-	sm.workersRunning += uint(workersRunningCounter)
+	for _, update := range updates {
+		update(sm)
+	}
+}
 
+func SetAppState(value AppState) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.state = value
+	}
+}
+
+func SetLinksInQueue(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.linksInQueue = value
+	}
+}
+
+func IncDecLinksInQueue(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.linksInQueue += value
+	}
+}
+
+func SetLinksCount(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.linksCount = value
+	}
+}
+
+func IncDecLinksCount(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.linksCount += value
+	}
+}
+
+func SetErrorsCount(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.errorCounts = value
+	}
+}
+
+func IncDecErrorsCount(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.errorCounts += value
+	}
+}
+
+func SetWorkersRunning(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.workersRunning = value
+	}
+}
+
+func IncDecWorkersRunning(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.workersRunning += value
+	}
+}
+
+func SetDepth(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.depth = value
+	}
+}
+
+func IncDecDepth(value int) func(*StatsManager) {
+	return func(sm *StatsManager) {
+		sm.depth += value
+	}
 }
 
 // This functions writes to an io.Writer the updated stats
@@ -60,8 +125,8 @@ func (sm *StatsManager) RunWriter() {
 
 	for {
 		sm.Lock()
-		fmt.Fprintf(sm.writer, "App State: %s      Workers (%d/%d)\nLinks Count: %5d   Errors: (%d/%d)\n",
-			sm.state, sm.workersRunning, sm.totalWorkersCount, sm.linksCount,
+		fmt.Fprintf(sm.writer, "App State: %s      Workers (%d/%d)\nLinks in Queue: %5d   Errors: (%d/%d)\n",
+			sm.state, sm.workersRunning, sm.totalWorkersCount, sm.linksInQueue,
 			sm.errorCounts, sm.linksCount)
 		sm.Unlock()
 

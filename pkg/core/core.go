@@ -73,6 +73,10 @@ func ExtractURL(baseURL string, rawURL string) (URLEntity, error) {
 		return URLEntity{}, fmt.Errorf("base URL not in a valid format: %s", err)
 	}
 
+	if baseU.Path == "" {
+		baseU.Path = "/"
+	}
+
 	// Relative URL relative to host
 	if strings.HasPrefix(u.Path, "/") {
 		rawURL = fmt.Sprintf("%s://%s%s", baseU.Scheme, baseU.Host, u.Path)

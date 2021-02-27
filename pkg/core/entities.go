@@ -8,7 +8,7 @@ type Record struct {
 	ParentURL  string `json:"parent_url"`
 	URL        string `json:"url"`
 	Host       string `json:"host"`
-	Depth      uint   `json:"depth"`
+	Depth      int    `json:"depth"`
 	Edges      []uint `json:"edges"`
 	StatusCode int    `json:"statusCode"`
 	ErrString  string `json:"errString,omitempty"`
@@ -20,7 +20,7 @@ type RMEntry struct {
 	ParentURL  string
 	StatusCode int
 	URL        URLEntity
-	Depth      uint
+	Depth      int
 	ErrString  string
 }
 
@@ -35,7 +35,7 @@ type URLEntity struct {
 // Task is what gets sent to the channel for workers to pull data from the web.
 type Task struct {
 	URL   string
-	Depth uint
+	Depth int
 }
 
 // Result is what workers return in a channel.
@@ -44,6 +44,6 @@ type Result struct {
 	StatusCode int
 	URLs       []URLEntity
 	// Depth of the child URLs
-	Depth uint
+	Depth int
 	Err   error
 }
