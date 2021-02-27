@@ -40,7 +40,7 @@
 # End of https://www.gitignore.io/api/go,linux
 
 # VSCode project settings
-.vscode
+# .vscode
 
 # VIM temporary files
 .*.sw*
