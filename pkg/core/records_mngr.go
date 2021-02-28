@@ -56,15 +56,6 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 	}
 }
 
-// Visited checks whether this URL has already been visited.
-// func (rm *RecordManager) Visited(rawURL string) bool {
-// 	elem, ok := rm.Records[rawURL]
-// 	if ok {
-// 		return elem.Visited
-// 	}
-// 	return false
-// }
-
 // Exists checks whether this URL exists in the table.
 func (rm *RecordManager) Exists(rawURL string) bool {
 	_, ok := rm.Records[rawURL]

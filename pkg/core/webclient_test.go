@@ -22,18 +22,18 @@ func TestWebClient(t *testing.T) {
 		expectedLinks      []core.URLEntity
 	}{
 		"parse 1": {
-			path:               "/random/path",
+			path:               "/random/path/to/oblivion/index.html",
 			htmlBody:           htmlBody1,
 			expectedStatusCode: 200,
 			expectedLinks: []core.URLEntity{{
 				Host: "www.example.com",
-				Raw:  "http://www.example.com/path1",
+				Raw:  "http://www.example.com/file.html",
 			}, {
 				Host: "%s",
 				Raw:  "%s/path/to/file999",
 			}, {
 				Host: "%s",
-				Raw:  "%s/random/path/path/to/file2",
+				Raw:  "%s/random/path/to/oblivion/path/to/file2",
 			}},
 			expectedErr: false,
 		},
