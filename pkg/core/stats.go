@@ -136,7 +136,21 @@ func IncDecDepth(value int) func(*StatsManager) {
 func (sm *StatsManager) RunWriter() {
 	sm.writer.Start()
 
-	fmtStr := "Crawler State: %11s      Workers: (%4d/%4d)\nTotal Req Count: %9d\nLinks in Queue: %10d      Depth:     (%3d/%3d)\nLinks in Cache: %10d      Errors: %12d\n"
+	fmtStr := "Crawler State: %11s\n" +
+		"Links in Cache: %10d     Depth:       (%3d/%3d)\n" +
+		"Links in Queue: %10d     Workers:   (%4d/%4d)\n" +
+		"Total Req Count: %9d     Errors: %5d (%5.2f%%)\n" +
+		"Requests/s: %14d\n" +
+		"Latency --------------- (in  seconds) ---------------\n" +
+		"Min: %6.3f    -     Avg: %6.3f     -    Max: %6.3f\n" +
+		"Last 10 errors --------------------------------------\n" +
+		"%s"
+
+		// truncate error messages to 50 chars
+		// last 10 errors:
+		// - error 1
+		// - error 2
+		// - error etc
 
 	for {
 		sm.Lock()
@@ -147,9 +161,22 @@ func (sm *StatsManager) RunWriter() {
 		// Errors (last 10):
 		// - one error per line
 		// - two errors, etc
+		errorsPerc := 0.0
+		if sm.totalRequestsCount != 0 {
+			errorsPerc = 100 * float64(sm.errorCounts) / float64(sm.totalRequestsCount)
+		}
 
-		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount, sm.linksInQueue,
-			sm.depth, sm.maxDepthLevel, sm.linksCount, sm.errorCounts)
+		// requests per second
+		var rps int = 0
+		lMin := 0.0
+		lAvg := 0.0
+		lMax := 0.0
+
+		errorsLines := "- error 1\n- error 2\n- error 3\n"
+
+		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.linksCount, sm.depth, sm.maxDepthLevel,
+			sm.linksInQueue, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount,
+			sm.errorCounts, errorsPerc, rps, lMin, lAvg, lMax, errorsLines)
 		sm.Unlock()
 
 		// Only stop when AppState == Finished!

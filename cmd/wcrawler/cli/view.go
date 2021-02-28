@@ -1,29 +1,55 @@
 package cli
 
 import (
-	"fmt"
+	"os"
 
+	"github.com/gustavooferreira/wcrawler/pkg/core/graph"
 	"github.com/spf13/cobra"
 )
 
 func newViewCmd() *cobra.Command {
 	var (
-		input  string
-		output string
+		inputFilePath  string
+		outputFilePath string
+		noautoopen     bool
 	)
 
 	viewCmd := &cobra.Command{
 		Use:   "view",
 		Short: "View web links relationships in the browser",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("file: %+v | %+v\n", input, output)
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-			// Save the html file in the same folder where the json file is located
+			iFile, err := os.Open(inputFilePath)
+			if err != nil {
+				return err
+			}
+			defer iFile.Close()
+
+			oFile, err := os.Create(outputFilePath)
+			if err != nil {
+				return err
+			}
+
+			defer oFile.Close()
+
+			v := graph.NewViewer(iFile, oFile)
+			err = v.Run()
+			if err != nil {
+				return nil
+			}
+
+			if !noautoopen {
+				graph.Openbrowser(outputFilePath)
+			}
+
+			return err
 		},
 	}
 
-	viewCmd.Flags().StringVarP(&input, "input", "i", "./web_graph.json", "file containing the data")
-	viewCmd.Flags().StringVarP(&output, "output", "o", "./web_graph.html", "HTML output")
+	viewCmd.Flags().StringVarP(&inputFilePath, "input", "i", "./web_graph.json", "file containing the data")
+	viewCmd.Flags().StringVarP(&outputFilePath, "output", "o", "./web_graph.html", "HTML output file")
+	viewCmd.Flags().BoolVarP(&noautoopen, "noautoopen", "n", false, "don't open browser automatically")
 
 	return viewCmd
 }

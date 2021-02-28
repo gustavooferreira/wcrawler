@@ -42,7 +42,7 @@ type Result struct {
 	ParentURL  string
 	StatusCode int
 	URLs       []URLEntity
-	// Depth of the child URLs
+	// Depth of the ParentURL
 	Depth int
 	Err   error
 }

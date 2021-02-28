@@ -31,7 +31,7 @@ type Crawler struct {
 func NewCrawler(connector Connector, initialURL string, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
 
 	if !IsAbsoluteURL(initialURL) {
-		return nil, fmt.Errorf("URL provided is not valid")
+		return nil, fmt.Errorf("URL has to be an absolute URL (including scheme)")
 	}
 
 	if workersCount == 0 {
@@ -197,7 +197,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 						queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
 						jobsCounter++
 
-						rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth}
+						rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth + 1}
 						rm.AddRecord(rme)
 					}
 				}

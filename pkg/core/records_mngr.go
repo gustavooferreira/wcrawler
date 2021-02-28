@@ -89,7 +89,7 @@ func (rm *RecordManager) Count() int {
 }
 
 // Dump returns all records in the RecordManager.
-func (rm *RecordManager) Dump(rawURL string) map[string]Record {
+func (rm *RecordManager) Dump() map[string]Record {
 	return rm.Records
 }
 
