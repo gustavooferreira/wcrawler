@@ -36,7 +36,7 @@ func TestSaveToWriter(t *testing.T) {
 	addEntries(rm)
 
 	var buf bytes.Buffer
-	rm.SaveToWriter(&buf)
+	rm.SaveToWriter(&buf, false)
 	assert.Equal(t, expected, buf.String())
 }
 

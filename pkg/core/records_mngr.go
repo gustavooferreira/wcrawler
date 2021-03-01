@@ -95,8 +95,11 @@ func (rm *RecordManager) Dump() map[string]Record {
 
 // SaveToWriter dumps the records map into a Writer in JSON format.
 // Can pass a os.File, to write to a file.
-func (rm *RecordManager) SaveToWriter(w io.Writer) error {
+func (rm *RecordManager) SaveToWriter(w io.Writer, indent bool) error {
 	encoder := json.NewEncoder(w)
+	if indent {
+		encoder.SetIndent("", "    ")
+	}
 	err := encoder.Encode(rm.Records)
 	return err
 }

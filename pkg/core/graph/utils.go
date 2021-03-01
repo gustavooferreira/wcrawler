@@ -15,7 +15,7 @@ import (
 var htmlTemplate string
 
 // GenerateHTML generates a new HTML file with the loaded data.
-func GenerateHTML(elements []Element, w io.Writer) error {
+func GenerateHTML(elements Elements, w io.Writer) error {
 	// Take the info from gg struct and json indent it to a string
 
 	jsonString, err := json.MarshalIndent(elements, "", "    ")

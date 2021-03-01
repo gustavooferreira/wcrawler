@@ -1,8 +1,8 @@
 package graph
 
 import (
-	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/gustavooferreira/wcrawler/pkg/core"
 )
@@ -28,43 +28,33 @@ func (v *Viewer) Run() error {
 
 	records := rm.Dump()
 
-	// Create struct as expected by cytoscape
-	elements := []Element{}
+	// Create struct as expected by 3d js library
+	nodes := []Node{}
+	links := []Link{}
 
-	parents := map[string]uint{}
 	idMapping := map[uint]string{}
 
+	// Nodes
 	for _, r := range records {
-		elem := Element{Group: "nodes", Data: Data{ID: r.URL, Parent: r.Host}}
-		elements = append(elements, elem)
+		node := Node{ID: strconv.Itoa(int(r.Index)), URL: r.URL, Domain: r.Host}
+		nodes = append(nodes, node)
 
-		if _, ok := parents[r.Host]; !ok {
-			parents[r.Host] = 0
-		}
-
-		idMapping[r.Index] = r.URL
+		idMapping[r.Index] = strconv.Itoa(int(r.Index))
 	}
 
-	// Loop through parents
-	for p, _ := range parents {
-		elem := Element{Group: "nodes", Data: Data{ID: p}}
-		elements = append(elements, elem)
-	}
-
-	// Add edges
+	// Add links
 	for _, r := range records {
 		for _, edge := range r.Edges {
-			elem := Element{
-				Group: "edges",
-				Data: Data{
-					ID:     fmt.Sprintf("%d-%d", r.Index, edge),
-					Source: idMapping[r.Index],
-					Target: idMapping[edge],
-				},
+			link := Link{
+				// ID:     fmt.Sprintf("%d-%d", r.Index, edge),
+				Source: idMapping[r.Index],
+				Target: idMapping[edge],
 			}
-			elements = append(elements, elem)
+			links = append(links, link)
 		}
 	}
+
+	elements := Elements{Nodes: nodes, Links: links}
 
 	err = GenerateHTML(elements, v.writer)
 	if err != nil {

@@ -1,13 +1,17 @@
 package graph
 
-type Element struct {
-	Group string `json:"group,omitempty"`
-	Data  Data   `json:"data,omitempty"`
+type Elements struct {
+	Links []Link `json:"links,omitempty"`
+	Nodes []Node `json:"nodes,omitempty"`
 }
 
-type Data struct {
-	ID     string `json:"id,omitempty"`
-	Parent string `json:"parent,omitempty"`
+type Link struct {
 	Source string `json:"source,omitempty"`
 	Target string `json:"target,omitempty"`
+}
+
+type Node struct {
+	ID     string `json:"id,omitempty"`
+	Domain string `json:"domain,omitempty"`
+	URL    string `description:"url,omitempty"`
 }

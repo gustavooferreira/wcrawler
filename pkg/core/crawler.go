@@ -251,7 +251,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	}
 
 	// Write to file
-	err = rm.SaveToWriter(c.IOWriter)
+	err = rm.SaveToWriter(c.IOWriter, true)
 	if err != nil {
 		// log
 	}

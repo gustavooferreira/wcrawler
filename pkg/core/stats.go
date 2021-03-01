@@ -142,9 +142,9 @@ func (sm *StatsManager) RunWriter() {
 		"Total Req Count: %9d     Errors: %5d (%5.2f%%)\n" +
 		"Requests/s: %14d\n" +
 		"Latency --------------- (in  seconds) ---------------\n" +
-		"Min: %6.3f    -     Avg: %6.3f     -    Max: %6.3f\n" +
-		"Last 10 errors --------------------------------------\n" +
-		"%s"
+		"Min: %6.3f    -     Avg: %6.3f     -    Max: %6.3f\n"
+		// "Last 10 errors --------------------------------------\n" +
+		// "%s"
 
 		// truncate error messages to 50 chars
 		// last 10 errors:
@@ -172,11 +172,11 @@ func (sm *StatsManager) RunWriter() {
 		lAvg := 0.0
 		lMax := 0.0
 
-		errorsLines := "- error 1\n- error 2\n- error 3\n"
+		// errorsLines := "- error 1\n- error 2\n- error 3\n"
 
 		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.linksCount, sm.depth, sm.maxDepthLevel,
 			sm.linksInQueue, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount,
-			sm.errorCounts, errorsPerc, rps, lMin, lAvg, lMax, errorsLines)
+			sm.errorCounts, errorsPerc, rps, lMin, lAvg, lMax) //, errorsLines)
 		sm.Unlock()
 
 		// Only stop when AppState == Finished!

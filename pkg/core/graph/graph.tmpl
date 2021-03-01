@@ -1,113 +1,23 @@
-<!DOCTYPE>
-<html>
-  <head>
-    <title>WCrawler Graph</title>
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
-    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-    <!--polyfills are needed for this extension for old browsers like IE -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/core-js/2.5.7/shim.min.js"></script>
-    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
-    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+<head>
+  <style> body { margin: 0; } </style>
 
-    <!-- EXTRAS -->
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.min.js"></script>
-    <script src="https://unpkg.com/popper.js@1.14.7/dist/umd/popper.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@1.0.4/cytoscape-popper.min.js"></script>
-    <script src="https://unpkg.com/tippy.js@4.0.1/umd/index.all.min.js"></script>
+  <script src="http://unpkg.com/3d-force-graph"></script>
+  <!--<script src="../../dist/3d-force-graph.js"></script>-->
+</head>
 
-    <style>
-      body {
-        font-family: helvetica;
-        font-size: 14px;
-      }
+<body>
+  <div id="3d-graph"></div>
 
-      #cy {
-        width: 100%;
-        height: 100%;
-        z-index: 999;
-      }
-    </style>
+  <script>
+    const elem = document.getElementById('3d-graph');
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function(){
+    const data = {{ .Elements }}
 
-        var cy = window.cy = cytoscape({
-          container: document.getElementById('cy'),
-
-          ready: function(){
-            this.nodes().forEach(function(node){
-              let width = [30, 70, 110];
-              let size = width[Math.floor(Math.random()*3)];
-              node.css("width", size);
-              node.css("height", size);
-            });
-            this.layout({name: 'cose-bilkent', animationDuration: 1000}).run();
-          },
-            
-          style: [
-            // TODO: Paint root node in different colour!
-            // Paint nodes in red where an error happened.
-            {
-              selector: 'node',
-              style: {
-                'background-color': '#ad1a66'
-              }
-            },
-
-            {
-              selector: ':parent',
-              style: {
-                'background-opacity': 0.333
-              }
-            },
-
-            {
-              selector: 'edge',
-              style: {
-                'width': 3,
-                'line-color': '#ad1a66'
-              }
-            }
-          ],
-          // TODO: put placeholder here.
-          // Go will replace placeholder with json (indented) generated code.
-          // Can have groups inside groups for subdomain of domains.
-          elements: {{ .Elements }}
-        });
-
-function makePopper(ele) {
-    let ref = ele.popperRef(); // used only for positioning
-
-    ele.tippy = tippy(ref, { // tippy options:
-      content: () => {
-        let content = document.createElement('div');
-
-        content.innerHTML = ele.id();
-
-        return content;
-      },
-      trigger: 'manual' // probably want manual mode
-    });
-  }
-
-  cy.ready(function() {
-    cy.elements().forEach(function(ele) {
-      // TODO: only create popups for nodes and groups! Ignore edges.
-      makePopper(ele);
-    });
-  });
-
-  cy.elements().unbind('mouseover');
-  cy.elements().bind('mouseover', (event) => event.target.tippy.show());
-
-  cy.elements().unbind('mouseout');
-  cy.elements().bind('mouseout', (event) => event.target.tippy.hide());
-
-      });
-    </script>
-  </head>
-
-  <body>
-    <div id="cy"></div>
-  </body>
-</html>
+    const Graph = ForceGraph3D()(elem)
+      .graphData(data)
+      .nodeAutoColorBy('domain')
+      .nodeLabel(node => `${node.URL}`)
+      .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
+      // .onNodeClick(node => window.open(`https://bl.ocks.org/${node.user}/${node.id}`, '_blank'));
+  </script>
+</body>
