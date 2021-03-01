@@ -3,6 +3,8 @@ package core
 import (
 	"io"
 	"net/http"
+	"net/http/httptrace"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -19,26 +21,39 @@ func NewWebClient(client *http.Client) *WebClient {
 }
 
 // GetLinks returns all the links found in the webpage.
-func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, err error) {
+func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, latency time.Duration, err error) {
 	// make sure to use the same http.Client to reuse connections to get links
 	// from other pages being served by the same server.
 	// Check for robot.txt, maybe?
 
-	resp, err := c.client.Get(rawURL)
+	req, _ := http.NewRequest("GET", rawURL, nil)
+
+	var start time.Time
+
+	trace := &httptrace.ClientTrace{
+		GotFirstResponseByte: func() {
+			latency = time.Since(start)
+		},
+	}
+
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	start = time.Now()
+
+	resp, err := c.client.Do(req)
 	if err != nil {
-		return 0, links, err
+		return 0, links, latency, err
 	}
 	defer resp.Body.Close()
 
 	statusCode = resp.StatusCode
 
 	if statusCode < 200 || statusCode >= 300 {
-		return statusCode, links, nil
+		return statusCode, links, latency, nil
 	}
 
 	links, err = c.parse(rawURL, resp.Body)
 
-	return statusCode, links, err
+	return statusCode, links, latency, err
 }
 
 // parse parses the webpage looking for links.

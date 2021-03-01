@@ -16,8 +16,9 @@
     const Graph = ForceGraph3D()(elem)
       .graphData(data)
       .nodeAutoColorBy('domain')
-      .nodeLabel(node => `${node.URL}`)
+      .nodeLabel(node => `${node.url}`)
+      .nodeVal(node => node.linksCount)
       .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
-      // .onNodeClick(node => window.open(`https://bl.ocks.org/${node.user}/${node.id}`, '_blank'));
+      .onNodeClick(node => window.open(`${node.url}`, '_blank'));
   </script>
 </body>

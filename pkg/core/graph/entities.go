@@ -11,7 +11,8 @@ type Link struct {
 }
 
 type Node struct {
-	ID     string `json:"id,omitempty"`
-	Domain string `json:"domain,omitempty"`
-	URL    string `description:"url,omitempty"`
+	ID         string `json:"id,omitempty"`
+	Domain     string `json:"domain,omitempty"`
+	URL        string `json:"url,omitempty"`
+	LinksCount int    `json:"linksCount,omitempty"`
 }

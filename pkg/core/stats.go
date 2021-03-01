@@ -8,7 +8,7 @@ import (
 	"github.com/gosuri/uilive"
 )
 
-type StatsManager struct {
+type StatsCLIOutput struct {
 	sync.Mutex
 
 	// keep a reference to were to print stats
@@ -26,6 +26,16 @@ type StatsManager struct {
 	// current level of depth
 	depth int
 
+	// latency
+	lMin float64
+	lMax float64
+	// Use these two numbers to compute average
+	lAvgTotal float64
+	lAvgCount float64
+
+	// Requests per second
+	rps int
+
 	// List of errors that happen during crawling
 	errors [10]error
 
@@ -36,15 +46,15 @@ type StatsManager struct {
 	maxDepthLevel int
 }
 
-func NewStatsManager(totalWorkersCount int, depth int) *StatsManager {
-	sm := StatsManager{state: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
+func NewStatsManager(totalWorkersCount int, depth int) *StatsCLIOutput {
+	sm := StatsCLIOutput{state: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
 	sm.writer = uilive.New()
 
 	return &sm
 }
 
 // UpdateStats updates the stats.
-func (sm *StatsManager) UpdateStats(updates ...func(*StatsManager)) {
+func (sm *StatsCLIOutput) UpdateStats(updates ...func(*StatsCLIOutput)) {
 	sm.Lock()
 	defer sm.Unlock()
 
@@ -53,87 +63,110 @@ func (sm *StatsManager) UpdateStats(updates ...func(*StatsManager)) {
 	}
 }
 
-func SetAppState(value AppState) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetAppState(value AppState) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.state = value
 	}
 }
 
-func SetLinksInQueue(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetLinksInQueue(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.linksInQueue = value
 	}
 }
 
-func IncDecLinksInQueue(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func IncDecLinksInQueue(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.linksInQueue += value
 	}
 }
 
-func SetLinksCount(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetLinksCount(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.linksCount = value
 	}
 }
 
-func IncDecLinksCount(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func IncDecLinksCount(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.linksCount += value
 	}
 }
 
-func SetErrorsCount(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetErrorsCount(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.errorCounts = value
 	}
 }
 
-func IncDecErrorsCount(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func IncDecErrorsCount(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.errorCounts += value
 	}
 }
 
-func SetWorkersRunning(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetWorkersRunning(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.workersRunning = value
 	}
 }
 
-func IncDecWorkersRunning(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func IncDecWorkersRunning(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.workersRunning += value
 	}
 }
 
-func SetTotalRequestsCount(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetTotalRequestsCount(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.totalRequestsCount = value
 	}
 }
 
-func IncDecTotalRequestsCount(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func IncDecTotalRequestsCount(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.totalRequestsCount += value
 	}
 }
 
-func SetDepth(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func SetDepth(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.depth = value
 	}
 }
 
-func IncDecDepth(value int) func(*StatsManager) {
-	return func(sm *StatsManager) {
+func IncDecDepth(value int) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
 		sm.depth += value
+	}
+}
+
+func AddLatencySample(value time.Duration) func(*StatsCLIOutput) {
+	return func(sm *StatsCLIOutput) {
+		valueF := value.Seconds()
+		if sm.lAvgCount == 0 {
+			sm.lMax = valueF
+			sm.lMin = valueF
+			sm.lAvgCount = 1
+			sm.lAvgTotal = valueF
+		} else {
+			if valueF > sm.lMax {
+				sm.lMax = valueF
+			}
+
+			if valueF < sm.lMin {
+				sm.lMin = valueF
+			}
+
+			sm.lAvgCount++
+			sm.lAvgTotal += valueF
+		}
 	}
 }
 
 // This functions writes to an io.Writer the updated stats
 // Run this in a goroutine
-func (sm *StatsManager) RunWriter() {
+func (sm *StatsCLIOutput) RunOutputFlusher() {
 	sm.writer.Start()
 
 	fmtStr := "Crawler State: %11s\n" +
@@ -146,11 +179,21 @@ func (sm *StatsManager) RunWriter() {
 		// "Last 10 errors --------------------------------------\n" +
 		// "%s"
 
+		// If zero samples, don't display latency
+
 		// truncate error messages to 50 chars
 		// last 10 errors:
 		// - error 1
 		// - error 2
 		// - error etc
+
+	// Setup counter (up to 5 times) since we wait 200 milliseconds,
+	// when we get to 5 it means it's time to look at the totalrequest count
+	// and subtract from the previous value
+
+	previousTotalRequestCount := 0
+	cyclesCount := 0
+	var rps int = 0
 
 	for {
 		sm.Lock()
@@ -167,16 +210,18 @@ func (sm *StatsManager) RunWriter() {
 		}
 
 		// requests per second
-		var rps int = 0
-		lMin := 0.0
-		lAvg := 0.0
-		lMax := 0.0
+		// This is a rough estimation
+		if cyclesCount == 5 {
+			cyclesCount = 0
+			rps = sm.totalRequestsCount - previousTotalRequestCount
+			previousTotalRequestCount = sm.totalRequestsCount
+		}
 
 		// errorsLines := "- error 1\n- error 2\n- error 3\n"
 
 		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.linksCount, sm.depth, sm.maxDepthLevel,
 			sm.linksInQueue, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount,
-			sm.errorCounts, errorsPerc, rps, lMin, lAvg, lMax) //, errorsLines)
+			sm.errorCounts, errorsPerc, rps, sm.lMin, sm.lAvgTotal/sm.lAvgCount, sm.lMax) //, errorsLines)
 		sm.Unlock()
 
 		// Only stop when AppState == Finished!
@@ -185,6 +230,7 @@ func (sm *StatsManager) RunWriter() {
 		}
 
 		time.Sleep(time.Millisecond * 200)
+		cyclesCount++
 	}
 
 	// fmt.Fprintf(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)

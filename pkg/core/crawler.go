@@ -20,7 +20,7 @@ type Crawler struct {
 	WorkersCount    int
 	Depth           int
 
-	statsManager *StatsManager
+	statsManager StatsManager
 
 	// Channels
 	tasks   chan Task
@@ -109,7 +109,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 				c.statsManager.UpdateStats(IncDecWorkersRunning(1))
 			}
 
-			statusCode, links, err := c.connector.GetLinks(t.URL)
+			statusCode, links, latency, err := c.connector.GetLinks(t.URL)
 
 			r := Result{
 				ParentURL:  t.URL,
@@ -122,7 +122,9 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 			c.results <- r
 
 			if c.Stats {
-				c.statsManager.UpdateStats(IncDecWorkersRunning(-1), IncDecTotalRequestsCount(1))
+				c.statsManager.UpdateStats(IncDecWorkersRunning(-1),
+					IncDecTotalRequestsCount(1),
+					AddLatencySample(latency))
 			}
 		}
 
@@ -264,5 +266,5 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 // StatsWriter writes stats to a io.Writer (e.g. os.Stdout)
 func (c *Crawler) StatsWriter(wg *sync.WaitGroup) {
 	defer wg.Done()
-	c.statsManager.RunWriter()
+	c.statsManager.RunOutputFlusher()
 }

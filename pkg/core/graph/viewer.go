@@ -36,7 +36,7 @@ func (v *Viewer) Run() error {
 
 	// Nodes
 	for _, r := range records {
-		node := Node{ID: strconv.Itoa(int(r.Index)), URL: r.URL, Domain: r.Host}
+		node := Node{ID: strconv.Itoa(int(r.Index)), URL: r.URL, Domain: r.Host, LinksCount: len(r.Edges)}
 		nodes = append(nodes, node)
 
 		idMapping[r.Index] = strconv.Itoa(int(r.Index))

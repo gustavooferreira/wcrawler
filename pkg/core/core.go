@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/url"
+	"time"
 )
 
 // ----------
@@ -11,7 +12,12 @@ import (
 
 // Connector describes the connector interface
 type Connector interface {
-	GetLinks(rawURL string) (statusCode int, links []URLEntity, err error)
+	GetLinks(rawURL string) (statusCode int, links []URLEntity, latency time.Duration, err error)
+}
+
+type StatsManager interface {
+	UpdateStats(updates ...func(*StatsCLIOutput))
+	RunOutputFlusher()
 }
 
 // ---------------
