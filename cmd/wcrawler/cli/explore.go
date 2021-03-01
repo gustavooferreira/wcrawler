@@ -23,8 +23,10 @@ func newExploreCmd() *cobra.Command {
 
 	exploreCmd := &cobra.Command{
 		Use:   "explore URL",
-		Short: "Explore the web by following links up to a pre-determined depth.\nA depth of zero means no limit.",
-		Args:  cobra.ExactArgs(1),
+		Short: "Explore the web by following links up to a pre-determined depth",
+		Long: "Explore the web by following links up to a pre-determined depth.\n" +
+			"A depth of zero means no limit.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
 
