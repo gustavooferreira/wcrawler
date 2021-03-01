@@ -16,9 +16,10 @@ type Crawler struct {
 	InitialURL      string
 	IOWriter        io.Writer
 	Stats           bool
-	StayInSubdomain bool
 	WorkersCount    int
 	Depth           int
+	StayInSubdomain bool
+	SubDomain       string
 
 	statsManager StatsManager
 
@@ -30,7 +31,8 @@ type Crawler struct {
 // NewCrawler returns a new Crawler.
 func NewCrawler(connector Connector, initialURL string, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
 
-	if !IsAbsoluteURL(initialURL) {
+	urlEntity, err := ExtractURL("", initialURL)
+	if err != nil {
 		return nil, fmt.Errorf("URL has to be an absolute URL (including scheme)")
 	}
 
@@ -38,18 +40,19 @@ func NewCrawler(connector Connector, initialURL string, ioWriter io.Writer, stat
 		return nil, fmt.Errorf("the number of workers needs to be greater than 0")
 	}
 
-	if depth == 0 {
-		return nil, fmt.Errorf("recursion depth needs to be greater than 0")
+	if depth < 0 {
+		return nil, fmt.Errorf("recursion depth needs to be greater or equal to 0")
 	}
 
 	return &Crawler{
 			connector:       connector,
-			InitialURL:      initialURL,
+			InitialURL:      urlEntity.Raw,
 			IOWriter:        ioWriter,
 			Stats:           stats,
-			StayInSubdomain: stayinsubdomain,
 			WorkersCount:    workersCount,
-			Depth:           depth},
+			Depth:           depth,
+			StayInSubdomain: stayinsubdomain,
+			SubDomain:       urlEntity.Domain},
 		nil
 }
 
@@ -143,6 +146,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	// when counter reaches zero it means there are no more jobs to be processed
 	// and the merger can exit.
 	jobsCounter := 0
+	var err error
 
 	// Create queue for queuing jobs
 	queue := lane.NewQueue()
@@ -155,12 +159,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	c.tasks <- task
 
 	// Add baseURL as an entry to Record Manager
-	urlEntity, err := ExtractURL("", c.InitialURL)
-	if err != nil {
-		// Clean up (close channels)
-	}
-
-	re := RMEntry{ParentURL: "", URL: urlEntity, Depth: 0}
+	re := RMEntry{ParentURL: "", URL: URLEntity{Domain: c.SubDomain, Raw: c.InitialURL}, Depth: 0}
 	rm.AddRecord(re)
 
 	jobsCounter++
@@ -192,8 +191,13 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 			// Check which new jobs to queue
 			// Check depth, if equal or greater then set, then don't queue more
 			// Also check that we didn't get an error or an unexpected status code
-			if r.Depth < c.Depth && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
+			// If Depth is equal to zero then don't stop ever.
+			if (r.Depth < c.Depth || c.Depth == 0) && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
 				for _, uu := range r.URLs {
+					if c.StayInSubdomain && c.SubDomain != uu.Domain {
+						continue
+					}
+
 					// if already in the cache, we don't want to query it again
 					if !rm.Exists(uu.Raw) {
 						queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})

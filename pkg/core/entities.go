@@ -25,8 +25,8 @@ type RMEntry struct {
 
 // URLEntity represents a URL.
 type URLEntity struct {
-	// Host represents the Host portion of the URL
-	Host string
+	// Domain represents the Domain portion of the URL
+	Domain string
 	// Raw represents the entire URL
 	Raw string
 }

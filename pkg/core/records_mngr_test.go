@@ -69,8 +69,8 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry1 := core.RMEntry{
 		ParentURL: "",
 		URL: core.URLEntity{
-			Host: "example1.com",
-			Raw:  "http://example1.com",
+			Domain: "example1.com",
+			Raw:    "http://example1.com",
 		},
 		Depth:      0,
 		StatusCode: 200,
@@ -81,8 +81,8 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry2 := core.RMEntry{
 		ParentURL: "http://example1.com",
 		URL: core.URLEntity{
-			Host: "example1.com",
-			Raw:  "http://example1.com/about",
+			Domain: "example1.com",
+			Raw:    "http://example1.com/about",
 		},
 		Depth:      1,
 		StatusCode: 200,
@@ -93,8 +93,8 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry3 := core.RMEntry{
 		ParentURL: "http://example1.com",
 		URL: core.URLEntity{
-			Host: "example1.com",
-			Raw:  "http://example1.com/main",
+			Domain: "example1.com",
+			Raw:    "http://example1.com/main",
 		},
 		Depth:      1,
 		StatusCode: 200,
@@ -105,8 +105,8 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry4 := core.RMEntry{
 		ParentURL: "http://example1.com/main",
 		URL: core.URLEntity{
-			Host: "example123.com",
-			Raw:  "http://example123.com/",
+			Domain: "example123.com",
+			Raw:    "http://example123.com/",
 		},
 		Depth:      2,
 		StatusCode: 200,

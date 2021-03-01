@@ -26,14 +26,14 @@ func TestWebClient(t *testing.T) {
 			htmlBody:           htmlBody1,
 			expectedStatusCode: 200,
 			expectedLinks: []core.URLEntity{{
-				Host: "www.example.com",
-				Raw:  "http://www.example.com/file.html",
+				Domain: "www.example.com",
+				Raw:    "http://www.example.com/file.html",
 			}, {
-				Host: "%s",
-				Raw:  "%s/path/to/file999",
+				Domain: "%s",
+				Raw:    "%s/path/to/file999",
 			}, {
-				Host: "%s",
-				Raw:  "%s/random/path/to/oblivion/path/to/file2",
+				Domain: "%s",
+				Raw:    "%s/random/path/to/oblivion/path/to/file2",
 			}},
 			expectedErr: false,
 		},
@@ -59,7 +59,7 @@ func TestWebClient(t *testing.T) {
 
 			host := u.Host
 
-			statusCode, links, err := wc.GetLinks(queryURL)
+			statusCode, links, _, err := wc.GetLinks(queryURL)
 
 			if test.expectedErr {
 				require.Error(t, err)
@@ -69,8 +69,8 @@ func TestWebClient(t *testing.T) {
 
 			// Replace URLEntity's Host and Raw with the URL provided by test server
 			for i, l := range test.expectedLinks {
-				if strings.Contains(l.Host, "%s") {
-					test.expectedLinks[i].Host = fmt.Sprintf(l.Host, host)
+				if strings.Contains(l.Domain, "%s") {
+					test.expectedLinks[i].Domain = fmt.Sprintf(l.Domain, host)
 				}
 
 				if strings.Contains(l.Raw, "%s") {

@@ -76,5 +76,5 @@ func ExtractURL(baseURL string, rawURL string) (URLEntity, error) {
 		rawURL += "?" + mergedU.RawQuery
 	}
 
-	return URLEntity{Host: mergedU.Host, Raw: rawURL}, nil
+	return URLEntity{Domain: mergedU.Host, Raw: rawURL}, nil
 }
