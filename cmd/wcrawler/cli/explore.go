@@ -15,6 +15,7 @@ func newExploreCmd() *cobra.Command {
 		nostats         bool
 		workers         uint
 		timeout         uint
+		retry           uint
 		depth           uint
 		stayinsubdomain bool
 		client          *http.Client
@@ -39,7 +40,7 @@ func newExploreCmd() *cobra.Command {
 			defer f.Close()
 
 			connector := core.NewWebClient(client)
-			c, err := core.NewCrawler(connector, url, f, !nostats, stayinsubdomain, int(workers), int(depth))
+			c, err := core.NewCrawler(connector, url, int(retry), f, !nostats, stayinsubdomain, int(workers), int(depth))
 			if err != nil {
 				return err
 			}
@@ -53,6 +54,7 @@ func newExploreCmd() *cobra.Command {
 	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")
 	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout in seconds")
+	exploreCmd.Flags().UintVarP(&retry, "retry", "r", 2, "retry requests when they timeout")
 	exploreCmd.Flags().UintVarP(&depth, "depth", "d", 10, "depth of recursion")
 
 	return exploreCmd

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/oleiade/lane"
 )
@@ -20,6 +21,7 @@ type Crawler struct {
 	Depth           int
 	StayInSubdomain bool
 	SubDomain       string
+	Retry           int
 
 	statsManager StatsManager
 
@@ -29,7 +31,7 @@ type Crawler struct {
 }
 
 // NewCrawler returns a new Crawler.
-func NewCrawler(connector Connector, initialURL string, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
+func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
 
 	urlEntity, err := ExtractURL("", initialURL)
 	if err != nil {
@@ -52,7 +54,8 @@ func NewCrawler(connector Connector, initialURL string, ioWriter io.Writer, stat
 			WorkersCount:    workersCount,
 			Depth:           depth,
 			StayInSubdomain: stayinsubdomain,
-			SubDomain:       urlEntity.Domain},
+			SubDomain:       urlEntity.Domain,
+			Retry:           retry},
 		nil
 }
 
@@ -98,41 +101,43 @@ func (c *Crawler) Run() {
 func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	end := false
-
 	for {
-		select {
-		case t, ok := <-c.tasks:
-			if !ok {
-				end = true
+		t, ok := <-c.tasks
+		if !ok {
+			break
+		}
+
+		if c.Stats {
+			c.statsManager.UpdateStats(IncDecWorkersRunning(1))
+		}
+
+		var statusCode int
+		var links []URLEntity
+		var latency time.Duration
+		var err error
+
+		// retry
+		for i := 0; i <= c.Retry; i++ {
+			statusCode, links, latency, err = c.connector.GetLinks(t.URL)
+			if err == nil {
 				break
-			}
-
-			if c.Stats {
-				c.statsManager.UpdateStats(IncDecWorkersRunning(1))
-			}
-
-			statusCode, links, latency, err := c.connector.GetLinks(t.URL)
-
-			r := Result{
-				ParentURL:  t.URL,
-				StatusCode: statusCode,
-				URLs:       links,
-				Depth:      t.Depth,
-				Err:        err,
-			}
-
-			c.results <- r
-
-			if c.Stats {
-				c.statsManager.UpdateStats(IncDecWorkersRunning(-1),
-					IncDecTotalRequestsCount(1),
-					AddLatencySample(latency))
 			}
 		}
 
-		if end {
-			break
+		r := Result{
+			ParentURL:  t.URL,
+			StatusCode: statusCode,
+			URLs:       links,
+			Depth:      t.Depth,
+			Err:        err,
+		}
+
+		c.results <- r
+
+		if c.Stats {
+			c.statsManager.UpdateStats(IncDecWorkersRunning(-1),
+				IncDecTotalRequestsCount(1),
+				AddLatencySample(latency))
 		}
 	}
 }
@@ -170,89 +175,78 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 
 	// ---------
 
-	end := false
-
 	for {
-		select {
-		case r := <-c.results:
-			// Got a response means we can decrement the job counter
-			jobsCounter--
+		r := <-c.results
+		// Got a response means we can decrement the job counter
+		jobsCounter--
 
-			// Update parent URL entry in Record Manager
-			err = rm.Update(r.ParentURL, r.StatusCode, r.Err)
-			if err != nil {
-				// log
-				// continue
-			}
+		// Update parent URL entry in Record Manager
+		err = rm.Update(r.ParentURL, r.StatusCode, r.Err)
+		if err != nil {
+			// log
+			// continue
+		}
 
-			// when processing the new links, make sure every time we queue a new link
-			// we increase the jobCounter
+		// when processing the new links, make sure every time we queue a new link
+		// we increase the jobCounter
 
-			// Check which new jobs to queue
-			// Check depth, if equal or greater then set, then don't queue more
-			// Also check that we didn't get an error or an unexpected status code
-			// If Depth is equal to zero then don't stop ever.
-			if (r.Depth < c.Depth || c.Depth == 0) && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
-				for _, uu := range r.URLs {
-					if c.StayInSubdomain && c.SubDomain != uu.Domain {
-						continue
-					}
-
-					// if already in the cache, we don't want to query it again
-					if !rm.Exists(uu.Raw) {
-						queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
-						jobsCounter++
-
-						rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth + 1}
-						rm.AddRecord(rme)
-					}
-				}
-			}
-
-			if c.Stats {
-				errCount := 0
-				if r.Err != nil || r.StatusCode < 200 || r.StatusCode >= 300 {
-					errCount = 1
+		// Check which new jobs to queue
+		// Check depth, if equal or greater then set, then don't queue more
+		// Also check that we didn't get an error or an unexpected status code
+		// If Depth is equal to zero then don't stop ever.
+		if (r.Depth < c.Depth || c.Depth == 0) && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
+			for _, uu := range r.URLs {
+				if c.StayInSubdomain && c.SubDomain != uu.Domain {
+					continue
 				}
 
-				c.statsManager.UpdateStats(
-					SetLinksInQueue(jobsCounter),
-					SetLinksCount(rm.Count()),
-					SetDepth(r.Depth),
-					IncDecErrorsCount(errCount))
-			}
+				// if already in the cache, we don't want to query it again
+				if !rm.Exists(uu.Raw) {
+					queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
+					jobsCounter++
 
-			// fill tasks channel until either channel blocks or queue is empty
-			for {
-				// Check if channel is full
-				// This is fine because this goroutine is the only one writing to the channel,
-				// so it won't block when we actually try to write to the channel.
-				// If it says the channel is full and the very next millisecond it's not,
-				// there is no problem as we will come back to this to refill it.
-				if len(c.tasks) == cap(c.tasks) {
-					break
+					rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth + 1}
+					rm.AddRecord(rme)
 				}
-
-				// Check if we can dequeue an item from the queue, if yes, try to push it to the channel
-				if queue.Empty() {
-					// No more items to dequeue
-					break
-				} else {
-					c.tasks <- queue.Dequeue().(Task)
-				}
-			}
-
-			// check if we are done (i.e., no more jobs)
-			if jobsCounter == 0 {
-				close(c.tasks)
-				end = true
 			}
 		}
 
-		// update the stats on what it has found so far to be printed on the screen.
+		if c.Stats {
+			errCount := 0
+			if r.Err != nil || r.StatusCode < 200 || r.StatusCode >= 300 {
+				errCount = 1
+			}
 
-		if end {
-			break
+			c.statsManager.UpdateStats(
+				SetLinksInQueue(jobsCounter),
+				SetLinksCount(rm.Count()),
+				SetDepth(r.Depth),
+				IncDecErrorsCount(errCount))
+		}
+
+		// fill tasks channel until either channel blocks or queue is empty
+		for {
+			// Check if channel is full
+			// This is fine because this goroutine is the only one writing to the channel,
+			// so it won't block when we actually try to write to the channel.
+			// If it says the channel is full and the very next millisecond it's not,
+			// there is no problem as we will come back to this to refill it.
+			if len(c.tasks) == cap(c.tasks) {
+				break
+			}
+
+			// Check if we can dequeue an item from the queue, if yes, try to push it to the channel
+			if queue.Empty() {
+				// No more items to dequeue
+				break
+			} else {
+				c.tasks <- queue.Dequeue().(Task)
+			}
+		}
+
+		// check if we are done (i.e., no more jobs)
+		if jobsCounter == 0 {
+			close(c.tasks)
 		}
 	}
 
