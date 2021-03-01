@@ -23,7 +23,7 @@ func newExploreCmd() *cobra.Command {
 
 	exploreCmd := &cobra.Command{
 		Use:   "explore URL",
-		Short: "Explore the web by following links up to a pre-determined depth",
+		Short: "Explore the web by following links up to a pre-determined depth.\nA depth of zero means no limit.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
@@ -52,10 +52,10 @@ func newExploreCmd() *cobra.Command {
 	exploreCmd.Flags().StringVarP(&filePath, "output", "o", "./web_graph.json", "file to save results")
 	exploreCmd.Flags().BoolVarP(&nostats, "nostats", "s", false, "don't show live stats")
 	exploreCmd.Flags().BoolVarP(&stayinsubdomain, "stayinsubdomain", "z", false, "follow links only in the same subdomain")
-	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 10, "number of workers making concurrent requests")
+	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 100, "number of workers making concurrent requests")
 	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout in seconds")
 	exploreCmd.Flags().UintVarP(&retry, "retry", "r", 2, "retry requests when they timeout")
-	exploreCmd.Flags().UintVarP(&depth, "depth", "d", 10, "depth of recursion")
+	exploreCmd.Flags().UintVarP(&depth, "depth", "d", 5, "depth of recursion")
 
 	return exploreCmd
 }

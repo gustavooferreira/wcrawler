@@ -247,6 +247,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 		// check if we are done (i.e., no more jobs)
 		if jobsCounter == 0 {
 			close(c.tasks)
+			break
 		}
 	}
 
