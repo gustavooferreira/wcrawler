@@ -33,7 +33,7 @@ type Crawler struct {
 // NewCrawler returns a new Crawler.
 func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
 
-	urlEntity, err := ExtractURL("", initialURL)
+	urlEntity, err := ExtractURL(initialURL)
 	if err != nil {
 		return nil, fmt.Errorf("URL has to be an absolute URL (including scheme)")
 	}
@@ -54,7 +54,7 @@ func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.W
 			WorkersCount:    workersCount,
 			Depth:           depth,
 			StayInSubdomain: stayinsubdomain,
-			SubDomain:       urlEntity.Domain,
+			SubDomain:       urlEntity.NetLoc,
 			Retry:           retry},
 		nil
 }
@@ -120,6 +120,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 		for i := 0; i <= c.Retry; i++ {
 			statusCode, links, latency, err = c.connector.GetLinks(t.URL)
 			if err == nil {
+				// Only retry if timeout!
 				break
 			}
 		}
@@ -127,7 +128,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 		r := Result{
 			ParentURL:  t.URL,
 			StatusCode: statusCode,
-			URLs:       links,
+			Links:      links,
 			Depth:      t.Depth,
 			Err:        err,
 		}
@@ -164,7 +165,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	c.tasks <- task
 
 	// Add baseURL as an entry to Record Manager
-	re := RMEntry{ParentURL: "", URL: URLEntity{Domain: c.SubDomain, Raw: c.InitialURL}, Depth: 0}
+	re := RMEntry{ParentURL: "", URL: URLEntity{NetLoc: c.SubDomain, Raw: c.InitialURL}, Depth: 0}
 	rm.AddRecord(re)
 
 	jobsCounter++
@@ -195,8 +196,8 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 		// Also check that we didn't get an error or an unexpected status code
 		// If Depth is equal to zero then don't stop ever.
 		if (r.Depth < c.Depth || c.Depth == 0) && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
-			for _, uu := range r.URLs {
-				if c.StayInSubdomain && c.SubDomain != uu.Domain {
+			for _, uu := range r.Links {
+				if c.StayInSubdomain && c.SubDomain != uu.NetLoc {
 					continue
 				}
 

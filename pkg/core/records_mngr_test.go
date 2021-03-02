@@ -69,7 +69,7 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry1 := core.RMEntry{
 		ParentURL: "",
 		URL: core.URLEntity{
-			Domain: "example1.com",
+			NetLoc: "example1.com",
 			Raw:    "http://example1.com",
 		},
 		Depth:      0,
@@ -81,7 +81,7 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry2 := core.RMEntry{
 		ParentURL: "http://example1.com",
 		URL: core.URLEntity{
-			Domain: "example1.com",
+			NetLoc: "example1.com",
 			Raw:    "http://example1.com/about",
 		},
 		Depth:      1,
@@ -93,7 +93,7 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry3 := core.RMEntry{
 		ParentURL: "http://example1.com",
 		URL: core.URLEntity{
-			Domain: "example1.com",
+			NetLoc: "example1.com",
 			Raw:    "http://example1.com/main",
 		},
 		Depth:      1,
@@ -105,7 +105,7 @@ func addEntries(rm *core.RecordManager) {
 	rmEntry4 := core.RMEntry{
 		ParentURL: "http://example1.com/main",
 		URL: core.URLEntity{
-			Domain: "example123.com",
+			NetLoc: "example123.com",
 			Raw:    "http://example123.com/",
 		},
 		Depth:      2,

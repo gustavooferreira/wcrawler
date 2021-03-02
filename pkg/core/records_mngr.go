@@ -33,7 +33,7 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 			Index:      index,
 			ParentURL:  entry.ParentURL,
 			URL:        entry.URL.Raw,
-			Host:       entry.URL.Domain,
+			Host:       entry.URL.NetLoc,
 			Depth:      entry.Depth,
 			StatusCode: entry.StatusCode,
 			ErrString:  entry.ErrString,

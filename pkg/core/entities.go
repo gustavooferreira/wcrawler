@@ -25,8 +25,8 @@ type RMEntry struct {
 
 // URLEntity represents a URL.
 type URLEntity struct {
-	// Domain represents the Domain portion of the URL
-	Domain string
+	// NetLoc represents the NetLoc portion of the URL
+	NetLoc string
 	// Raw represents the entire URL
 	Raw string
 }
@@ -41,7 +41,7 @@ type Task struct {
 type Result struct {
 	ParentURL  string
 	StatusCode int
-	URLs       []URLEntity
+	Links      []URLEntity
 	// Depth of the ParentURL
 	Depth int
 	Err   error

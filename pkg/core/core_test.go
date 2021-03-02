@@ -8,54 +8,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsAbsoluteURL(t *testing.T) {
-	tests := map[string]struct {
-		url      string
-		expected bool
-	}{
-		"url 1": {url: "/path/to/file", expected: false},
-		"url 2": {url: "google.com/path/to/file", expected: false},
-		"url 3": {url: "http://google.com/path/to/file", expected: true},
-		"url 4": {url: "https://google.com/path/to/file", expected: true},
-		"url 5": {url: "https://example.com:9999", expected: true},
-		"url 6": {url: "https://example.com/", expected: true},
-		"url 7": {url: "https://example.com:9999/path/to/file", expected: true},
-		"url 8": {url: "https://example.com:9999/path/to/file#fragment", expected: true},
-		"url 9": {url: "https://example.com:9999/path/to/file?q=1&w=2#fragment", expected: true},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			value := core.IsAbsoluteURL(test.url)
-			assert.Equal(t, test.expected, value)
-		})
-	}
-}
-
 func TestExtractParentURL(t *testing.T) {
 	tests := map[string]struct {
-		url         string
-		expectedURL string
-		expectedErr bool
+		url            string
+		expectedURLEnt core.URLEntity
+		expectedErr    bool
 	}{
-		"url 1": {url: "", expectedURL: "", expectedErr: true},
-		"url 2": {url: "qwe:\n//1.1.1.1/path_to_file?qwe=213", expectedURL: "", expectedErr: true},
-		"url 3": {url: "/path/to/file", expectedURL: "", expectedErr: true},
-		"url 4": {url: "google.com/path/to/file", expectedURL: "", expectedErr: true},
-		"url 5": {url: "http://google.com/path/to/file", expectedURL: "http://google.com/path/to/file", expectedErr: false},
-		"url 6": {url: "https://google.com", expectedURL: "https://google.com", expectedErr: false},
-		"url 7": {url: "https://example.com:9999", expectedURL: "https://example.com:9999", expectedErr: false},
-		"url 8": {url: "https://example.com/", expectedURL: "https://example.com/", expectedErr: false},
+		"url 1": {url: "",
+			expectedURLEnt: core.URLEntity{NetLoc: "", Raw: ""},
+			expectedErr:    true},
+		"url 2": {url: "qwe:\n//1.1.1.1/path_to_file?qwe=213",
+			expectedURLEnt: core.URLEntity{NetLoc: "", Raw: ""},
+			expectedErr:    true},
+		"url 3": {url: "/path/to/file",
+			expectedURLEnt: core.URLEntity{NetLoc: "", Raw: ""},
+			expectedErr:    true},
+		"url 4": {url: "google.com/path/to/file",
+			expectedURLEnt: core.URLEntity{NetLoc: "", Raw: ""},
+			expectedErr:    true},
+		"url 5": {url: "http://google.com/path/to/file",
+			expectedURLEnt: core.URLEntity{NetLoc: "google.com", Raw: "http://google.com/path/to/file"},
+			expectedErr:    false},
+		"url 6": {url: "https://google.com",
+			expectedURLEnt: core.URLEntity{NetLoc: "google.com", Raw: "https://google.com"},
+			expectedErr:    false},
+		"url 7": {url: "https://example.com:9999",
+			expectedURLEnt: core.URLEntity{NetLoc: "example.com:9999", Raw: "https://example.com:9999"},
+			expectedErr:    false},
+		"url 8": {url: "https://example.com/",
+			expectedURLEnt: core.URLEntity{NetLoc: "example.com", Raw: "https://example.com/"},
+			expectedErr:    false},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			value, err := core.ExtractParentURL(test.url)
+			value, err := core.ExtractURL(test.url)
 			if test.expectedErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, test.expectedURL, value)
+				assert.Equal(t, test.expectedURLEnt, value)
 			}
 		})
 	}
@@ -72,38 +64,38 @@ func TestExtractURL(t *testing.T) {
 		"url 2": {
 			parentURL:   "http://example.com",
 			url:         "https://test123.com/path/to/file",
-			expectedURL: core.URLEntity{Domain: "test123.com", Raw: "https://test123.com/path/to/file"},
+			expectedURL: core.URLEntity{NetLoc: "test123.com", Raw: "https://test123.com/path/to/file"},
 			expectedErr: false,
 		},
 		"url 3": {
 			parentURL:   "http://example.com",
 			url:         "/path/to/file",
-			expectedURL: core.URLEntity{Domain: "example.com", Raw: "http://example.com/path/to/file"},
+			expectedURL: core.URLEntity{NetLoc: "example.com", Raw: "http://example.com/path/to/file"},
 			expectedErr: false,
 		},
 		"url 4": {
 			parentURL:   "http://example.com/base/",
 			url:         "path/to/file",
-			expectedURL: core.URLEntity{Domain: "example.com", Raw: "http://example.com/base/path/to/file"},
+			expectedURL: core.URLEntity{NetLoc: "example.com", Raw: "http://example.com/base/path/to/file"},
 			expectedErr: false,
 		},
 		"url 5": {
 			parentURL:   "http://example.com/base/index.html",
 			url:         "../path/to/file",
-			expectedURL: core.URLEntity{Domain: "example.com", Raw: "http://example.com/path/to/file"},
+			expectedURL: core.URLEntity{NetLoc: "example.com", Raw: "http://example.com/path/to/file"},
 			expectedErr: false,
 		},
 		"url 6": {
 			parentURL:   "http://example.com/base/path/to/index.html",
 			url:         "/path/to/file",
-			expectedURL: core.URLEntity{Domain: "example.com", Raw: "http://example.com/path/to/file"},
+			expectedURL: core.URLEntity{NetLoc: "example.com", Raw: "http://example.com/path/to/file"},
 			expectedErr: false,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			value, err := core.ExtractURL(test.parentURL, test.url)
+			value, err := core.JoinURLs(test.parentURL, test.url)
 			if test.expectedErr {
 				require.Error(t, err)
 			} else {

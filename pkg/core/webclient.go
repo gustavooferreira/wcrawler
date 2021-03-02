@@ -26,7 +26,10 @@ func (c *WebClient) GetLinks(rawURL string) (statusCode int, links []URLEntity, 
 	// from other pages being served by the same server.
 	// Check for robot.txt, maybe?
 
-	req, _ := http.NewRequest("GET", rawURL, nil)
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return 0, links, latency, err
+	}
 
 	var start time.Time
 
@@ -67,10 +70,7 @@ func (c *WebClient) parse(rawURL string, r io.Reader) (links []URLEntity, err er
 	// TODO: Make sure body is utf-8 encoded
 
 	insideHead := false
-	baseURL, err := ExtractParentURL(rawURL)
-	if err != nil {
-		return links, err
-	}
+	baseURL := rawURL
 
 	links = []URLEntity{}
 
@@ -95,10 +95,7 @@ func (c *WebClient) parse(rawURL string, r io.Reader) (links []URLEntity, err er
 			if t.Data == "base" && insideHead == true {
 				ok, rawURL := getHref(t)
 				if ok {
-					baseURL2, err := ExtractParentURL(rawURL)
-					if err == nil {
-						baseURL = baseURL2
-					}
+					baseURL = rawURL
 				}
 			}
 
@@ -117,7 +114,7 @@ func (c *WebClient) parse(rawURL string, r io.Reader) (links []URLEntity, err er
 			// rawURL = strings.TrimSpace(rawURL)
 
 			// Deals with absolute and relative URLs.
-			urlEntity, err := ExtractURL(baseURL, rawURL)
+			urlEntity, err := JoinURLs(baseURL, rawURL)
 			if err != nil {
 				continue
 			}
