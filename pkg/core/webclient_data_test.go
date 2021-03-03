@@ -13,3 +13,17 @@ const htmlBody1 = `
 </body>
 </html>
 `
+
+const htmlBody2 = `
+<!DOCTYPE html>
+<html>
+<head>
+<title>Title</title>
+<base href="http://www.example.com/base/path/to/dir/" target="_blank" />
+</head>
+<body>
+<a href="/path/to/file1">link1</p>
+<a href="relative/file2">link1</p>
+</body>
+</html>
+`

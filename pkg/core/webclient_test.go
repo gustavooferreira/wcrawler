@@ -37,6 +37,19 @@ func TestWebClient(t *testing.T) {
 			}},
 			expectedErr: false,
 		},
+		"parse 2": {
+			path:               "/random/path/to/oblivion/index.html",
+			htmlBody:           htmlBody2,
+			expectedStatusCode: 200,
+			expectedLinks: []core.URLEntity{{
+				NetLoc: "www.example.com",
+				Raw:    "http://www.example.com/path/to/file1",
+			}, {
+				NetLoc: "www.example.com",
+				Raw:    "http://www.example.com/base/path/to/dir/relative/file2",
+			}},
+			expectedErr: false,
+		},
 	}
 
 	// Setup

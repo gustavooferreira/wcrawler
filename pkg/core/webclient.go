@@ -83,7 +83,7 @@ func (c *WebClient) parse(rawURL string, r io.Reader) (links []URLEntity, err er
 		case tt == html.ErrorToken:
 			// EOF
 			return links, nil
-		case tt == html.StartTagToken:
+		case tt == html.StartTagToken || tt == html.SelfClosingTagToken:
 			t := z.Token()
 
 			if t.Data == "head" {
