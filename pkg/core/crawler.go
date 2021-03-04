@@ -101,12 +101,7 @@ func (c *Crawler) Run() {
 func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for {
-		t, ok := <-c.tasks
-		if !ok {
-			break
-		}
-
+	for t := range c.tasks {
 		if c.Stats {
 			c.statsManager.UpdateStats(IncDecWorkersRunning(1))
 		}
