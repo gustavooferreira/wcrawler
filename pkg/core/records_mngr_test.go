@@ -16,19 +16,20 @@ func TestAddRecords(t *testing.T) {
 	value, ok := rm.Get("http://example1.com")
 
 	require.Equal(t, true, ok)
-	assert.Equal(t, []uint{1, 2}, value.Edges)
+
+	expectedES := core.NewEdgesSet()
+	expectedES.Add(1, 2)
+	assert.Equal(t, expectedES, value.Edges)
 }
 
 func TestSaveToWriter(t *testing.T) {
-	expected := `{"http://example1.com":{"index":0,"parent_url":"",` +
-		`"url":"http://example1.com","host":"example1.com","depth":0,"edges":[1,2],` +
-		`"statusCode":200},"http://example1.com/about":{"index":1,` +
-		`"parent_url":"http://example1.com","url":"http://example1.com/about",` +
+	expected := `{"http://example1.com":{"index":0,"initPoint":true,"url":"http://example1.com",` +
+		`"host":"example1.com","depth":0,"edges":[1,2],"statusCode":200},` +
+		`"http://example1.com/about":{"index":1,"initPoint":false,"url":"http://example1.com/about",` +
 		`"host":"example1.com","depth":1,"edges":[],"statusCode":200},` +
-		`"http://example1.com/main":{"index":2,"parent_url":"http://example1.com",` +
-		`"url":"http://example1.com/main","host":"example1.com","depth":1,"edges":[3],` +
-		`"statusCode":200},"http://example123.com/":{"index":3,` +
-		`"parent_url":"http://example1.com/main","url":"http://example123.com/",` +
+		`"http://example1.com/main":{"index":2,"initPoint":false,"url":"http://example1.com/main",` +
+		`"host":"example1.com","depth":1,"edges":[3],"statusCode":200},` +
+		`"http://example123.com/":{"index":3,"initPoint":false,"url":"http://example123.com/",` +
 		`"host":"example123.com","depth":2,"edges":[],"statusCode":200}}
 `
 
@@ -41,15 +42,13 @@ func TestSaveToWriter(t *testing.T) {
 }
 
 func TestLoadFromWriter(t *testing.T) {
-	input := `{"http://example1.com":{"index":0,"parent_url":"",` +
-		`"url":"http://example1.com","host":"example1.com","depth":0,"edges":[1,2],` +
-		`"statusCode":200},"http://example1.com/about":{"index":1,` +
-		`"parent_url":"http://example1.com","url":"http://example1.com/about",` +
+	input := `{"http://example1.com":{"index":0,"initPoint":true,"url":"http://example1.com",` +
+		`"host":"example1.com","depth":0,"edges":[1,2],"statusCode":200},` +
+		`"http://example1.com/about":{"index":1,"initPoint":false,"url":"http://example1.com/about",` +
 		`"host":"example1.com","depth":1,"edges":[],"statusCode":200},` +
-		`"http://example1.com/main":{"index":2,"parent_url":"http://example1.com",` +
-		`"url":"http://example1.com/main","host":"example1.com","depth":1,"edges":[3],` +
-		`"statusCode":200},"http://example123.com/":{"index":3,` +
-		`"parent_url":"http://example1.com/main","url":"http://example123.com/",` +
+		`"http://example1.com/main":{"index":2,"initPoint":false,"url":"http://example1.com/main",` +
+		`"host":"example1.com","depth":1,"edges":[3],"statusCode":200},` +
+		`"http://example123.com/":{"index":3,"initPoint":false,"url":"http://example123.com/",` +
 		`"host":"example123.com","depth":2,"edges":[],"statusCode":200}}
 `
 
@@ -59,10 +58,18 @@ func TestLoadFromWriter(t *testing.T) {
 	buf.WriteString(input)
 	rm.LoadFromReader(&buf)
 
-	r, ok := rm.Get("http://example1.com")
+	value, ok := rm.Get("http://example1.com")
 	require.Equal(t, true, ok)
 
-	assert.Equal(t, []uint{1, 2}, r.Edges)
+	expectedES := core.NewEdgesSet()
+	expectedES.Add(1, 2)
+	assert.Equal(t, expectedES, value.Edges)
+
+	assert.Equal(t, true, value.InitPoint)
+
+	value, ok = rm.Get("http://example1.com/about")
+	require.Equal(t, true, ok)
+	assert.Equal(t, false, value.InitPoint)
 }
 
 func addEntries(rm *core.RecordManager) {

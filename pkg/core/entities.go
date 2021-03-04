@@ -1,17 +1,26 @@
 package core
 
+import (
+	"encoding/json"
+	"sort"
+)
+
 // Record represents an entry in the RecordManager (internal state).
 type Record struct {
 	// Index allows easy referencing of records (used in the edges)
-	Index uint `json:"index"`
-	// ParentURL holds the URL for the first ParentURL found (there may be more)
-	ParentURL  string `json:"parent_url"`
-	URL        string `json:"url"`
-	Host       string `json:"host"`
-	Depth      int    `json:"depth"`
-	Edges      []uint `json:"edges"`
-	StatusCode int    `json:"statusCode"`
-	ErrString  string `json:"errString,omitempty"`
+	Index int `json:"index"`
+	// This indicates whether this is the start of the graph
+	// i.e., URL provided.
+	InitPoint bool   `json:"initPoint"`
+	URL       string `json:"url"`
+	Host      string `json:"host"`
+	Depth     int    `json:"depth"`
+	// Edges      []uint `json:"edges"`
+	// This is supposed to be mimicing a hashset
+	// We use a struct as a value as it's a bit more space efficient
+	Edges      EdgesSet `json:"edges"`
+	StatusCode int      `json:"statusCode"`
+	ErrString  string   `json:"errString,omitempty"`
 }
 
 // RMEntry represents an entry in the RecordManager (external interface).
@@ -45,4 +54,63 @@ type Result struct {
 	// Depth of the ParentURL
 	Depth int
 	Err   error
+}
+
+type EdgesSet map[int]struct{}
+
+func NewEdgesSet() EdgesSet {
+	return make(map[int]struct{})
+}
+
+func (es EdgesSet) Add(elems ...int) {
+	for _, elem := range elems {
+		es[elem] = struct{}{}
+	}
+}
+
+func (es EdgesSet) Remove(elem int) {
+	delete(es, elem)
+}
+
+func (es EdgesSet) Count() int {
+	return len(es)
+}
+
+func (es EdgesSet) Dump() []int {
+	arr := []int{}
+	for k := range es {
+		arr = append(arr, k)
+	}
+	return arr
+}
+
+func (es EdgesSet) MarshalJSON() ([]byte, error) {
+	// Create an array with fixed size
+	arr := make([]int, len(es))
+	index := 0
+	for k := range es {
+		arr[index] = k
+		index++
+	}
+
+	// sort array before marshaling
+	sort.Ints(arr)
+
+	return json.Marshal(arr)
+}
+
+func (es *EdgesSet) UnmarshalJSON(b []byte) error {
+	*es = make(map[int]struct{})
+
+	arr := []int{}
+
+	err := json.Unmarshal(b, &arr)
+	if err != nil {
+		return err
+	}
+
+	for _, e := range arr {
+		(*es)[e] = struct{}{}
+	}
+	return nil
 }

@@ -32,11 +32,11 @@ func (v *Viewer) Run() error {
 	nodes := []Node{}
 	links := []Link{}
 
-	idMapping := map[uint]string{}
+	idMapping := map[int]string{}
 
 	// Nodes
 	for _, r := range records {
-		node := Node{ID: strconv.Itoa(int(r.Index)), URL: r.URL, Domain: r.Host, LinksCount: len(r.Edges)}
+		node := Node{ID: strconv.Itoa(int(r.Index)), URL: r.URL, Domain: r.Host, LinksCount: r.Edges.Count()}
 		nodes = append(nodes, node)
 
 		idMapping[r.Index] = strconv.Itoa(int(r.Index))
@@ -44,7 +44,7 @@ func (v *Viewer) Run() error {
 
 	// Add links
 	for _, r := range records {
-		for _, edge := range r.Edges {
+		for _, edge := range r.Edges.Dump() {
 			link := Link{
 				// ID:     fmt.Sprintf("%d-%d", r.Index, edge),
 				Source: idMapping[r.Index],

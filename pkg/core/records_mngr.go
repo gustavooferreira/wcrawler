@@ -10,7 +10,7 @@ import (
 type RecordManager struct {
 	// Keeps a table of Records. Key is the URL (scheme,authority,path,query)
 	Records    map[string]Record
-	IndexCount uint
+	IndexCount int
 }
 
 // NewRecordManager returns a new Record Manager.
@@ -22,7 +22,7 @@ func NewRecordManager() *RecordManager {
 
 // AddRecord adds a record to the RecordManager.
 func (rm *RecordManager) AddRecord(entry RMEntry) {
-	var index uint
+	var index int
 
 	if entryRecord, ok := rm.Records[entry.URL.Raw]; ok {
 		index = entryRecord.Index
@@ -31,13 +31,16 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 
 		r := Record{
 			Index:      index,
-			ParentURL:  entry.ParentURL,
 			URL:        entry.URL.Raw,
 			Host:       entry.URL.NetLoc,
 			Depth:      entry.Depth,
 			StatusCode: entry.StatusCode,
 			ErrString:  entry.ErrString,
-			Edges:      []uint{},
+			Edges:      NewEdgesSet(),
+		}
+
+		if entry.ParentURL == "" {
+			r.InitPoint = true
 		}
 
 		rm.Records[entry.URL.Raw] = r
@@ -48,7 +51,7 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 	// Add pointers on parent's entry
 	if entry.ParentURL != "" {
 		if parentEntry, ok := rm.Records[entry.ParentURL]; ok {
-			parentEntry.Edges = append(parentEntry.Edges, index)
+			parentEntry.Edges.Add(index)
 			rm.Records[entry.ParentURL] = parentEntry
 		} else {
 			// we should have never landed here. being here, means there is a bug somewhere else.
@@ -60,6 +63,23 @@ func (rm *RecordManager) AddRecord(entry RMEntry) {
 func (rm *RecordManager) Exists(rawURL string) bool {
 	_, ok := rm.Records[rawURL]
 	return ok
+}
+
+// AddEdge adds a new edge to a record if not already present.
+func (rm *RecordManager) AddEdge(fromURL string, toURL string) error {
+	toEntry, ok := rm.Records[toURL]
+	if !ok {
+		return fmt.Errorf("record not found")
+	}
+
+	fromEntry, ok := rm.Records[fromURL]
+	if !ok {
+		return fmt.Errorf("record not found")
+	}
+
+	fromEntry.Edges.Add(toEntry.Index)
+	rm.Records[fromURL] = fromEntry
+	return nil
 }
 
 // Update updates entry in the table.
@@ -109,6 +129,6 @@ func (rm *RecordManager) SaveToWriter(w io.Writer, indent bool) error {
 func (rm *RecordManager) LoadFromReader(r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(&rm.Records)
-	rm.IndexCount = uint(len(rm.Records))
+	rm.IndexCount = len(rm.Records)
 	return err
 }

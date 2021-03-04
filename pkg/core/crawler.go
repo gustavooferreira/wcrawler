@@ -190,19 +190,26 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 		// Check depth, if equal or greater then set, then don't queue more
 		// Also check that we didn't get an error or an unexpected status code
 		// If Depth is equal to zero then don't stop ever.
-		if (r.Depth < c.Depth || c.Depth == 0) && r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
+		if r.Err == nil && r.StatusCode >= 200 && r.StatusCode < 300 {
 			for _, uu := range r.Links {
 				if c.StayInSubdomain && c.SubDomain != uu.NetLoc {
 					continue
 				}
 
-				// if already in the cache, we don't want to query it again
 				if !rm.Exists(uu.Raw) {
-					queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
-					jobsCounter++
-
 					rme := RMEntry{ParentURL: r.ParentURL, URL: uu, Depth: r.Depth + 1}
 					rm.AddRecord(rme)
+
+					// This means we will have entries in the cache that weren't tested
+					// i.e., we didn't make a request, therefore statuscode will be 0.
+					// We can use this as an indication as to whether a request has been made,
+					// to a given URL or not.
+					if r.Depth < c.Depth || c.Depth == 0 {
+						queue.Enqueue(Task{URL: uu.Raw, Depth: r.Depth + 1})
+						jobsCounter++
+					}
+				} else {
+					rm.AddEdge(r.ParentURL, uu.Raw)
 				}
 			}
 		}
