@@ -19,6 +19,11 @@ coverage-report:
 	@go tool cover -html=/tmp/coverage.txt
 
 
+.PHONY: bench
+bench:
+	@go test -benchmem -bench . -run=^$$ ./...
+
+
 .PHONY: lint
 lint:
 	@gofmt -l .

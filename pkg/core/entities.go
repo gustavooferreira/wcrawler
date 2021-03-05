@@ -81,6 +81,10 @@ func (es EdgesSet) Dump() []int {
 	for k := range es {
 		arr = append(arr, k)
 	}
+
+	// sort array before returning
+	sort.Ints(arr)
+
 	return arr
 }
 
