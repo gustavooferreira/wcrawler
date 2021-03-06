@@ -21,7 +21,7 @@ coverage-report:
 
 .PHONY: bench
 bench:
-	@go test -benchmem -bench . -run=^$$ ./...
+	@go test -benchmem -bench . -run=XXX ./...
 
 
 .PHONY: lint
