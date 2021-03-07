@@ -17,7 +17,6 @@ func BenchmarkMarshalEdgesSet(b *testing.B) {
 
 	for name, bm := range benchmarks {
 		b.Run(name, func(b *testing.B) {
-			// b.ReportAllocs()
 
 			// Initialize and load EdgesSet
 			set := core.NewEdgesSet()
@@ -25,6 +24,7 @@ func BenchmarkMarshalEdgesSet(b *testing.B) {
 				set.Add(i)
 			}
 
+			b.ReportAllocs()
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
@@ -45,7 +45,6 @@ func BenchmarkDumpEdgesSet(b *testing.B) {
 
 	for name, bm := range benchmarks {
 		b.Run(name, func(b *testing.B) {
-			// b.ReportAllocs()
 
 			// Initialize and load EdgesSet
 			set := core.NewEdgesSet()
@@ -53,6 +52,7 @@ func BenchmarkDumpEdgesSet(b *testing.B) {
 				set.Add(i)
 			}
 
+			b.ReportAllocs()
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {

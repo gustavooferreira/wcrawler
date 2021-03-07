@@ -38,6 +38,8 @@
 .nfs*
 
 # End of https://www.gitignore.io/api/go,linux
+#
+# ### Custom
 
 # VSCode project settings
 # .vscode
@@ -47,3 +49,6 @@
 
 # Ignore bin folder
 /bin/
+
+# Coverage report
+/coverage.txt
