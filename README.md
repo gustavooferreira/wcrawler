@@ -1,5 +1,10 @@
 # WCrawler
 
+[![Build Status](https://travis-ci.com/gustavooferreira/wcrawler.svg?branch=master)](https://travis-ci.com/gustavooferreira/wcrawler)
+[![codecov](https://codecov.io/gh/gustavooferreira/wcrawler/branch/master/graph/badge.svg)](https://codecov.io/gh/gustavooferreira/wcrawler)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gustavooferreira/wcrawler)](https://goreportcard.com/report/github.com/gustavooferreira/wcrawler)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/gustavooferreira/wcrawler)](https://pkg.go.dev/github.com/gustavooferreira/wcrawler)
+
 WCrawler is a simple web crawler CLI tool.
 
 **NOTE:** This tool was created mainly for practice purposes and therefore doesn't rely on any library that facilitates crawling.
