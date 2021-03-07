@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core/graph"
+	"github.com/gustavooferreira/wcrawler/internal/graph"
 	"github.com/spf13/cobra"
 )
 

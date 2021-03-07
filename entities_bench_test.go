@@ -1,9 +1,9 @@
-package core_test
+package wcrawler_test
 
 import (
 	"testing"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core"
+	"github.com/gustavooferreira/wcrawler"
 )
 
 func BenchmarkMarshalEdgesSet(b *testing.B) {
@@ -19,7 +19,7 @@ func BenchmarkMarshalEdgesSet(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 
 			// Initialize and load EdgesSet
-			set := core.NewEdgesSet()
+			set := wcrawler.NewEdgesSet()
 			for i := 0; i < bm.n; i++ {
 				set.Add(i)
 			}
@@ -47,7 +47,7 @@ func BenchmarkDumpEdgesSet(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 
 			// Initialize and load EdgesSet
-			set := core.NewEdgesSet()
+			set := wcrawler.NewEdgesSet()
 			for i := 0; i < bm.n; i++ {
 				set.Add(i)
 			}

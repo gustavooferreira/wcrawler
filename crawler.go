@@ -1,4 +1,4 @@
-package core
+package wcrawler
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gustavooferreira/wcrawler/internal"
 	"github.com/oleiade/lane"
 )
 
@@ -70,12 +71,12 @@ func (c *Crawler) Run() {
 
 	// Start stats goroutine
 	if c.Stats {
-		sm := NewStatsManager(c.WorkersCount, c.Depth)
+		sm := internal.NewStatsManager(c.WorkersCount, c.Depth)
 		wg.Add(1)
 		c.statsManager = sm
 		go c.StatsWriter(&wg)
 
-		c.statsManager.UpdateStats(SetAppState(AppState_Running))
+		c.statsManager.UpdateStats(internal.SetAppState(internal.AppState_Running))
 	}
 
 	// Start merger goroutine (deals with records manager)
@@ -103,7 +104,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 
 	for t := range c.tasks {
 		if c.Stats {
-			c.statsManager.UpdateStats(IncDecWorkersRunning(1))
+			c.statsManager.UpdateStats(internal.IncDecWorkersRunning(1))
 		}
 
 		var statusCode int
@@ -131,9 +132,9 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 		c.results <- r
 
 		if c.Stats {
-			c.statsManager.UpdateStats(IncDecWorkersRunning(-1),
-				IncDecTotalRequestsCount(1),
-				AddLatencySample(latency))
+			c.statsManager.UpdateStats(internal.IncDecWorkersRunning(-1),
+				internal.IncDecTotalRequestsCount(1),
+				internal.AddLatencySample(latency))
 		}
 	}
 }
@@ -166,7 +167,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	jobsCounter++
 
 	if c.Stats {
-		c.statsManager.UpdateStats(SetLinksInQueue(jobsCounter))
+		c.statsManager.UpdateStats(internal.SetLinksInQueue(jobsCounter))
 	}
 
 	// ---------
@@ -221,10 +222,10 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 			}
 
 			c.statsManager.UpdateStats(
-				SetLinksInQueue(jobsCounter),
-				SetLinksCount(rm.Count()),
-				SetDepth(r.Depth),
-				IncDecErrorsCount(errCount))
+				internal.SetLinksInQueue(jobsCounter),
+				internal.SetLinksCount(rm.Count()),
+				internal.SetDepth(r.Depth),
+				internal.IncDecErrorsCount(errCount))
 		}
 
 		// fill tasks channel until either channel blocks or queue is empty
@@ -261,7 +262,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	}
 
 	if c.Stats {
-		c.statsManager.UpdateStats(SetAppState(AppState_Finished))
+		c.statsManager.UpdateStats(internal.SetAppState(internal.AppState_Finished))
 	}
 }
 

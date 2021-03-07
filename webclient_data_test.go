@@ -1,4 +1,4 @@
-package core_test
+package wcrawler_test
 
 const htmlBody1 = `
 <!DOCTYPE html>

@@ -1,9 +1,11 @@
-package core
+package wcrawler
 
 import (
 	"fmt"
 	"net/url"
 	"time"
+
+	"github.com/gustavooferreira/wcrawler/internal"
 )
 
 // ----------
@@ -16,7 +18,7 @@ type Connector interface {
 }
 
 type StatsManager interface {
-	UpdateStats(updates ...func(*StatsCLIOutput))
+	UpdateStats(updates ...func(*internal.StatsCLIOutput))
 	RunOutputFlusher()
 }
 

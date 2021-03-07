@@ -4,7 +4,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core"
+	"github.com/gustavooferreira/wcrawler"
 )
 
 type Viewer struct {
@@ -19,7 +19,7 @@ func NewViewer(r io.Reader, w io.Writer) *Viewer {
 
 func (v *Viewer) Run() error {
 
-	rm := core.NewRecordManager()
+	rm := wcrawler.NewRecordManager()
 
 	err := rm.LoadFromReader(v.reader)
 	if err != nil {

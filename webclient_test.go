@@ -1,4 +1,4 @@
-package core_test
+package wcrawler_test
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core"
+	"github.com/gustavooferreira/wcrawler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,13 +19,13 @@ func TestWebClient(t *testing.T) {
 		htmlBody           string
 		expectedErr        bool
 		expectedStatusCode int
-		expectedLinks      []core.URLEntity
+		expectedLinks      []wcrawler.URLEntity
 	}{
 		"parse 1": {
 			path:               "/random/path/to/oblivion/index.html",
 			htmlBody:           htmlBody1,
 			expectedStatusCode: 200,
-			expectedLinks: []core.URLEntity{{
+			expectedLinks: []wcrawler.URLEntity{{
 				NetLoc: "www.example.com",
 				Raw:    "http://www.example.com/file.html",
 			}, {
@@ -41,7 +41,7 @@ func TestWebClient(t *testing.T) {
 			path:               "/random/path/to/oblivion/index.html",
 			htmlBody:           htmlBody2,
 			expectedStatusCode: 200,
-			expectedLinks: []core.URLEntity{{
+			expectedLinks: []wcrawler.URLEntity{{
 				NetLoc: "www.example.com",
 				Raw:    "http://www.example.com/path/to/file1",
 			}, {
@@ -54,7 +54,7 @@ func TestWebClient(t *testing.T) {
 
 	// Setup
 	c := &http.Client{}
-	wc := core.NewWebClient(c)
+	wc := wcrawler.NewWebClient(c)
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {

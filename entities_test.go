@@ -1,16 +1,16 @@
-package core_test
+package wcrawler_test
 
 import (
 	"testing"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core"
+	"github.com/gustavooferreira/wcrawler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEdgesSetCreation(t *testing.T) {
 
-	set := core.NewEdgesSet()
+	set := wcrawler.NewEdgesSet()
 
 	require.NotNil(t, set, "EdgesSet must not be nil")
 
@@ -22,7 +22,7 @@ func TestEdgesSetCreation(t *testing.T) {
 func TestEdgesSetUninitializedOperations(t *testing.T) {
 	assert := assert.New(t)
 
-	var set core.EdgesSet
+	var set wcrawler.EdgesSet
 
 	// testing len function on type
 	length := len(set)
@@ -64,8 +64,8 @@ func TestEdgesSetUninitializedOperations(t *testing.T) {
 func TestEdgesSetOperations(t *testing.T) {
 	assert := assert.New(t)
 
-	// set := core.EdgesSet{}
-	set := core.NewEdgesSet()
+	// set := wcrawler.EdgesSet{}
+	set := wcrawler.NewEdgesSet()
 
 	set.Add(1, 2, 3, 4, 5, 6)
 

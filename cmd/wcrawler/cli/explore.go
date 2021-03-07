@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core"
+	"github.com/gustavooferreira/wcrawler"
 	"github.com/spf13/cobra"
 )
 
@@ -41,8 +41,8 @@ func newExploreCmd() *cobra.Command {
 
 			defer f.Close()
 
-			connector := core.NewWebClient(client)
-			c, err := core.NewCrawler(connector, url, int(retry), f, !nostats, stayinsubdomain, int(workers), int(depth))
+			connector := wcrawler.NewWebClient(client)
+			c, err := wcrawler.NewCrawler(connector, url, int(retry), f, !nostats, stayinsubdomain, int(workers), int(depth))
 			if err != nil {
 				return err
 			}

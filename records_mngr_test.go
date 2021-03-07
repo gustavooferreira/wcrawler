@@ -1,23 +1,23 @@
-package core_test
+package wcrawler_test
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/gustavooferreira/wcrawler/pkg/core"
+	"github.com/gustavooferreira/wcrawler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAddRecords(t *testing.T) {
-	rm := core.NewRecordManager()
+	rm := wcrawler.NewRecordManager()
 	addEntries(rm)
 
 	value, ok := rm.Get("http://example1.com")
 
 	require.Equal(t, true, ok)
 
-	expectedES := core.NewEdgesSet()
+	expectedES := wcrawler.NewEdgesSet()
 	expectedES.Add(1, 2)
 	assert.Equal(t, expectedES, value.Edges)
 }
@@ -33,7 +33,7 @@ func TestSaveToWriter(t *testing.T) {
 		`"host":"example123.com","depth":2,"edges":[],"statusCode":200}}
 `
 
-	rm := core.NewRecordManager()
+	rm := wcrawler.NewRecordManager()
 	addEntries(rm)
 
 	var buf bytes.Buffer
@@ -52,7 +52,7 @@ func TestLoadFromWriter(t *testing.T) {
 		`"host":"example123.com","depth":2,"edges":[],"statusCode":200}}
 `
 
-	rm := core.NewRecordManager()
+	rm := wcrawler.NewRecordManager()
 
 	var buf bytes.Buffer
 	buf.WriteString(input)
@@ -61,7 +61,7 @@ func TestLoadFromWriter(t *testing.T) {
 	value, ok := rm.Get("http://example1.com")
 	require.Equal(t, true, ok)
 
-	expectedES := core.NewEdgesSet()
+	expectedES := wcrawler.NewEdgesSet()
 	expectedES.Add(1, 2)
 	assert.Equal(t, expectedES, value.Edges)
 
@@ -72,10 +72,10 @@ func TestLoadFromWriter(t *testing.T) {
 	assert.Equal(t, false, value.InitPoint)
 }
 
-func addEntries(rm *core.RecordManager) {
-	rmEntry1 := core.RMEntry{
+func addEntries(rm *wcrawler.RecordManager) {
+	rmEntry1 := wcrawler.RMEntry{
 		ParentURL: "",
-		URL: core.URLEntity{
+		URL: wcrawler.URLEntity{
 			NetLoc: "example1.com",
 			Raw:    "http://example1.com",
 		},
@@ -85,9 +85,9 @@ func addEntries(rm *core.RecordManager) {
 	}
 	rm.AddRecord(rmEntry1)
 
-	rmEntry2 := core.RMEntry{
+	rmEntry2 := wcrawler.RMEntry{
 		ParentURL: "http://example1.com",
-		URL: core.URLEntity{
+		URL: wcrawler.URLEntity{
 			NetLoc: "example1.com",
 			Raw:    "http://example1.com/about",
 		},
@@ -97,9 +97,9 @@ func addEntries(rm *core.RecordManager) {
 	}
 	rm.AddRecord(rmEntry2)
 
-	rmEntry3 := core.RMEntry{
+	rmEntry3 := wcrawler.RMEntry{
 		ParentURL: "http://example1.com",
-		URL: core.URLEntity{
+		URL: wcrawler.URLEntity{
 			NetLoc: "example1.com",
 			Raw:    "http://example1.com/main",
 		},
@@ -109,9 +109,9 @@ func addEntries(rm *core.RecordManager) {
 	}
 	rm.AddRecord(rmEntry3)
 
-	rmEntry4 := core.RMEntry{
+	rmEntry4 := wcrawler.RMEntry{
 		ParentURL: "http://example1.com/main",
-		URL: core.URLEntity{
+		URL: wcrawler.URLEntity{
 			NetLoc: "example123.com",
 			Raw:    "http://example123.com/",
 		},

@@ -27,6 +27,10 @@ coverage-report: ## Run the tests of the project and show line by line coverage 
 bench: ## Run benchmarks of the project
 	@go test -benchmem -bench . -run=XXX ./...
 
+.PHONY: escape-analysis
+escape-analysis: ## Run Escape Analysis
+	@go build -gcflags "-m=2" ./...
+
 
 .PHONY: lint
 lint: ## Run linters
