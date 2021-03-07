@@ -111,7 +111,7 @@ make coverage
 
 I'd normally be more than happy to accept pull requests, but given that I've created this project with the sole intent of practicing, it doesn't make sense for me to accept other people's work.
 
-However, feel free to fork the project and add whatever new features you fill like.
+However, feel free to fork the project and add whatever new features you feel like.
 
 I'd still be glad if you notice a bug and report it by opening an issue.
 
