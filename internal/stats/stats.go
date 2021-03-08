@@ -1,4 +1,4 @@
-package internal
+package stats
 
 import (
 	"fmt"
@@ -9,12 +9,21 @@ import (
 )
 
 type StatsCLIOutput struct {
-	sync.Mutex
 
 	// keep a reference to were to print stats
 	writer *uilive.Writer
 
-	state AppState
+	// Read only vars
+	// --------------
+	totalWorkersCount int
+	// depth level provided by user
+	maxDepthLevel int
+
+	// mu protects access to the fields below
+	mu sync.Mutex
+
+	// Crawler State
+	State AppState
 
 	// This is the total number of links still to be checked
 	// This number will keep increasing as new links are found.
@@ -30,7 +39,7 @@ type StatsCLIOutput struct {
 	lMin float64
 	lMax float64
 	// Use these two numbers to compute average
-	lAvgTotal float64
+	lAvgSum   float64
 	lAvgCount float64
 
 	// Requests per second
@@ -38,16 +47,10 @@ type StatsCLIOutput struct {
 
 	// List of errors that happen during crawling
 	errors [10]error
-
-	// --------------
-	// Read only vars
-	totalWorkersCount int
-	// depth level provided by user
-	maxDepthLevel int
 }
 
 func NewStatsManager(totalWorkersCount int, depth int) *StatsCLIOutput {
-	sm := StatsCLIOutput{state: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
+	sm := StatsCLIOutput{State: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
 	sm.writer = uilive.New()
 
 	return &sm
@@ -55,8 +58,8 @@ func NewStatsManager(totalWorkersCount int, depth int) *StatsCLIOutput {
 
 // UpdateStats updates the stats.
 func (sm *StatsCLIOutput) UpdateStats(updates ...func(*StatsCLIOutput)) {
-	sm.Lock()
-	defer sm.Unlock()
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
 
 	for _, update := range updates {
 		update(sm)
@@ -65,7 +68,7 @@ func (sm *StatsCLIOutput) UpdateStats(updates ...func(*StatsCLIOutput)) {
 
 func SetAppState(value AppState) func(*StatsCLIOutput) {
 	return func(sm *StatsCLIOutput) {
-		sm.state = value
+		sm.State = value
 	}
 }
 
@@ -148,7 +151,7 @@ func AddLatencySample(value time.Duration) func(*StatsCLIOutput) {
 			sm.lMax = valueF
 			sm.lMin = valueF
 			sm.lAvgCount = 1
-			sm.lAvgTotal = valueF
+			sm.lAvgSum = valueF
 		} else {
 			if valueF > sm.lMax {
 				sm.lMax = valueF
@@ -159,12 +162,12 @@ func AddLatencySample(value time.Duration) func(*StatsCLIOutput) {
 			}
 
 			sm.lAvgCount++
-			sm.lAvgTotal += valueF
+			sm.lAvgSum += valueF
 		}
 	}
 }
 
-// This functions writes to an io.Writer the updated stats
+// This functions writes the updated stats to an io.Writer
 // Run this in a goroutine
 func (sm *StatsCLIOutput) RunOutputFlusher() {
 	sm.writer.Start()
@@ -196,7 +199,7 @@ func (sm *StatsCLIOutput) RunOutputFlusher() {
 	var rps int = 0
 
 	for {
-		sm.Lock()
+		sm.mu.Lock()
 
 		// if len(sm.errors) != 0
 		// append string at the end with the errors formatted
@@ -219,13 +222,13 @@ func (sm *StatsCLIOutput) RunOutputFlusher() {
 
 		// errorsLines := "- error 1\n- error 2\n- error 3\n"
 
-		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.linksCount, sm.depth, sm.maxDepthLevel,
+		fmt.Fprintf(sm.writer, fmtStr, sm.State, sm.linksCount, sm.depth, sm.maxDepthLevel,
 			sm.linksInQueue, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount,
-			sm.errorCounts, errorsPerc, rps, sm.lMin, sm.lAvgTotal/sm.lAvgCount, sm.lMax) //, errorsLines)
-		sm.Unlock()
+			sm.errorCounts, errorsPerc, rps, sm.lMin, sm.lAvgSum/sm.lAvgCount, sm.lMax) //, errorsLines)
+		sm.mu.Unlock()
 
 		// Only stop when AppState == Finished!
-		if sm.state == AppState_Finished {
+		if sm.State == AppState_Finished {
 			break
 		}
 

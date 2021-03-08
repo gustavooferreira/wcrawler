@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gustavooferreira/wcrawler/internal"
+	"github.com/gustavooferreira/wcrawler/internal/stats"
 	"github.com/oleiade/lane"
 )
 
@@ -71,12 +71,12 @@ func (c *Crawler) Run() {
 
 	// Start stats goroutine
 	if c.Stats {
-		sm := internal.NewStatsManager(c.WorkersCount, c.Depth)
+		sm := stats.NewStatsManager(c.WorkersCount, c.Depth)
 		wg.Add(1)
 		c.statsManager = sm
 		go c.StatsWriter(&wg)
 
-		c.statsManager.UpdateStats(internal.SetAppState(internal.AppState_Running))
+		c.statsManager.UpdateStats(stats.SetAppState(stats.AppState_Running))
 	}
 
 	// Start merger goroutine (deals with records manager)
@@ -104,7 +104,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 
 	for t := range c.tasks {
 		if c.Stats {
-			c.statsManager.UpdateStats(internal.IncDecWorkersRunning(1))
+			c.statsManager.UpdateStats(stats.IncDecWorkersRunning(1))
 		}
 
 		var statusCode int
@@ -132,9 +132,9 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 		c.results <- r
 
 		if c.Stats {
-			c.statsManager.UpdateStats(internal.IncDecWorkersRunning(-1),
-				internal.IncDecTotalRequestsCount(1),
-				internal.AddLatencySample(latency))
+			c.statsManager.UpdateStats(stats.IncDecWorkersRunning(-1),
+				stats.IncDecTotalRequestsCount(1),
+				stats.AddLatencySample(latency))
 		}
 	}
 }
@@ -167,7 +167,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	jobsCounter++
 
 	if c.Stats {
-		c.statsManager.UpdateStats(internal.SetLinksInQueue(jobsCounter))
+		c.statsManager.UpdateStats(stats.SetLinksInQueue(jobsCounter))
 	}
 
 	// ---------
@@ -222,10 +222,10 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 			}
 
 			c.statsManager.UpdateStats(
-				internal.SetLinksInQueue(jobsCounter),
-				internal.SetLinksCount(rm.Count()),
-				internal.SetDepth(r.Depth),
-				internal.IncDecErrorsCount(errCount))
+				stats.SetLinksInQueue(jobsCounter),
+				stats.SetLinksCount(rm.Count()),
+				stats.SetDepth(r.Depth),
+				stats.IncDecErrorsCount(errCount))
 		}
 
 		// fill tasks channel until either channel blocks or queue is empty
@@ -262,7 +262,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	}
 
 	if c.Stats {
-		c.statsManager.UpdateStats(internal.SetAppState(internal.AppState_Finished))
+		c.statsManager.UpdateStats(stats.SetAppState(stats.AppState_Finished))
 	}
 }
 
