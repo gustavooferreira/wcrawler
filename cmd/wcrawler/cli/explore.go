@@ -18,6 +18,7 @@ func newExploreCmd() *cobra.Command {
 		retry           uint
 		depth           uint
 		stayinsubdomain bool
+		treemode        bool
 		client          *http.Client
 	)
 
@@ -42,7 +43,7 @@ func newExploreCmd() *cobra.Command {
 			defer f.Close()
 
 			connector := wcrawler.NewWebClient(client)
-			c, err := wcrawler.NewCrawler(connector, url, int(retry), f, !nostats, stayinsubdomain, int(workers), int(depth))
+			c, err := wcrawler.NewCrawler(connector, url, int(retry), f, !nostats, stayinsubdomain, treemode, int(workers), int(depth))
 			if err != nil {
 				return err
 			}
@@ -58,6 +59,7 @@ func newExploreCmd() *cobra.Command {
 	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout in seconds")
 	exploreCmd.Flags().UintVarP(&retry, "retry", "r", 2, "retry requests when they timeout")
 	exploreCmd.Flags().UintVarP(&depth, "depth", "d", 5, "depth of recursion")
+	exploreCmd.Flags().BoolVarP(&treemode, "treemode", "m", false, "doesn't add links which would point back to known nodes")
 
 	return exploreCmd
 }

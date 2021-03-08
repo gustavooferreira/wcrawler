@@ -21,6 +21,7 @@ type Crawler struct {
 	WorkersCount    int
 	Depth           int
 	StayInSubdomain bool
+	TreeMode        bool
 	SubDomain       string
 	Retry           int
 
@@ -32,7 +33,7 @@ type Crawler struct {
 }
 
 // NewCrawler returns a new Crawler.
-func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.Writer, stats bool, stayinsubdomain bool, workersCount int, depth int) (*Crawler, error) {
+func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.Writer, stats bool, stayinsubdomain bool, treemode bool, workersCount int, depth int) (*Crawler, error) {
 
 	urlEntity, err := ExtractURL(initialURL)
 	if err != nil {
@@ -55,6 +56,7 @@ func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.W
 			WorkersCount:    workersCount,
 			Depth:           depth,
 			StayInSubdomain: stayinsubdomain,
+			TreeMode:        treemode,
 			SubDomain:       urlEntity.NetLoc,
 			Retry:           retry},
 		nil
