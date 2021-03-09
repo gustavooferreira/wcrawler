@@ -11,6 +11,8 @@ WCrawler is a simple web crawler CLI tool.
 
 ![Usage example video](https://user-images.githubusercontent.com/17534422/109546768-85aec680-7ac2-11eb-8c72-2dbf7c7223a8.mp4)
 
+\<according to [this](https://twitter.com/natfriedman/status/1365393828622921728) github is supposed to be able to display mp4 videos on markdown, but doesn't seem to work. Let's hope it's an Blue/Green deployment thing, and wait>
+
 # Usage
 
 Exploring the Web:
@@ -23,6 +25,7 @@ A depth of zero means no limit.
 Usage:
   wcrawler explore URL [flags]
 
+
 Flags:
   -d, --depth uint        depth of recursion (default 5)
   -h, --help              help for explore
@@ -31,6 +34,7 @@ Flags:
   -r, --retry uint        retry requests when they timeout (default 2)
   -z, --stayinsubdomain   follow links only in the same subdomain
   -t, --timeout uint      HTTP requests timeout in seconds (default 10)
+  -m, --treemode          doesn't add links which would point back to known nodes
   -w, --workers uint      number of workers making concurrent requests (default 100)
 ```
 
