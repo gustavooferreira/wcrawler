@@ -11,7 +11,7 @@ WCrawler is a simple web crawler CLI tool.
 
 ![Usage example video](https://user-images.githubusercontent.com/17534422/109546768-85aec680-7ac2-11eb-8c72-2dbf7c7223a8.mp4)
 
-Watch this &#9757;
+**Watch this &#9757;**
 
 \<according to [this](https://twitter.com/natfriedman/status/1365393828622921728) github is supposed to be able to display mp4 videos on markdown, but doesn't seem to work. Let's hope it's a Blue/Green deployment thing and wait>
 
