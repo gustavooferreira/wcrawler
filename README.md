@@ -11,7 +11,7 @@ WCrawler is a simple web crawler CLI tool.
 
 ![Usage example video](https://user-images.githubusercontent.com/17534422/109546768-85aec680-7ac2-11eb-8c72-2dbf7c7223a8.mp4)
 
-\<according to [this](https://twitter.com/natfriedman/status/1365393828622921728) github is supposed to be able to display mp4 videos on markdown, but doesn't seem to work. Let's hope it's a Blue/Green deployment thing, and wait>
+\<according to [this](https://twitter.com/natfriedman/status/1365393828622921728) github is supposed to be able to display mp4 videos on markdown, but doesn't seem to work. Let's hope it's a Blue/Green deployment thing and wait>
 
 # Usage
 
@@ -56,6 +56,12 @@ Flags:
 
 This will generate a webpage and load it on your default browser.
 
+**NOTE:** If you want to see a nice graph, make sure to run `wcrawler explore` with the `-m` flag.
+Tree mode doesn't create links back to the original URLs making for much nicer visualizations.
+Its utility? None, but the graph are undeniably more beautiful.
+
+Naturally, if you want a proper graph of the links visited and where they point to, just disregard the `-m` option. Don't try to visualize that however, cos it's going to look ugly, if not freeze your browser entirely. Consider yourself warned :)
+
 # Example
 
 This will crawl the web starting at the `example.com` website up to a max of 8 depth levels, using 5 workers with a 6 second timeout per request and saving the collected data to `/tmp/result.json`.
@@ -64,11 +70,26 @@ This will crawl the web starting at the `example.com` website up to a max of 8 d
 wcrawler explore https://example.com -d 8 -w 5 -t 6 -o /tmp/result.json
 ```
 
-This command will then generate an HTML file with a graph view of the data collected and load it onto the default web browser.
+This command will then generate an HTML file with a graph view of the data collected and load it onto the default web browser. Only try to visualize the graph if you have specified the `-m` option! It's going to be the wrong graph, but it's going to look nice!
 
 ```
 wcrawler view -i /tmp/result.json
 ```
+
+---
+
+# Considerations
+
+Here I'm going to discuss the design decisions and a few caveats, but only when I'm actually done with the project.
+
+Still have a few more things to do like:
+
+- Show last 10 errors in the CLI while crawling
+- Make output more colorful
+- Docs, docs and more docs
+- Increase coverage and run some benchmarks (I'm pretty sure I can speed up some parts and reduce allocations, even though this program is I/O bound more than anything else so won't benefit much from these optimizations, but practice is practice)
+- Add golangci-lint to travis-ci (cos it's quite nice)
+- Add logic to fetch websites robots.txt file and adhere to whatever it's in there. At the moment we are just crawling everything (feeling like an outlaw here at the minute)
 
 ---
 
@@ -97,6 +118,8 @@ To build this project run:
 ```
 make build
 ```
+
+The `wcrawler` binary will be placed inside the `bin/` folder.
 
 ---
 
