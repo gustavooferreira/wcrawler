@@ -100,6 +100,10 @@ Still have a few more things to do like:
 
 # Third party libraries being used (directly):
 
+Could have written the whole thing without using any library, but reusability is not a bad idea at all!
+
+The only rule I had was to not use any library that facilitates crawling.
+
 ```
 - github.com/gosuri/uilive     [updating terminal output in realtime]
 - github.com/spf13/cobra       [CLI args and flags parsing]
