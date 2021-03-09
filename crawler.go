@@ -212,7 +212,9 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 						jobsCounter++
 					}
 				} else {
-					rm.AddEdge(r.ParentURL, uu.Raw)
+					if !c.TreeMode {
+						rm.AddEdge(r.ParentURL, uu.Raw)
+					}
 				}
 			}
 		}
