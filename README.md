@@ -68,13 +68,13 @@ Naturally, if you want a proper graph of the links visited and where they point 
 
 # Example
 
-This following command will crawl the web starting at the `example.com` website up to a max of 8 depth levels, using 5 workers with a 6 second timeout per request and saving the collected data to `/tmp/result.json`.
+The following command will crawl the web starting at the `example.com` website up to a max of 8 depth levels, using 5 workers with a 6 second timeout per request and saving the collected data to `/tmp/result.json`.
 
 ```
 wcrawler explore https://example.com -d 8 -w 5 -t 6 -o /tmp/result.json
 ```
 
-This following command will then generate an HTML file with a graph view of the data collected and load it onto the default web browser. Only try to visualize the graph if you have specified the `-m` option! It's going to be the wrong graph, but it's going to look nice!
+The following command will then generate an HTML file with a graph view of the data collected and load it onto the default web browser. Only try to visualize the graph if you have specified the `-m` option! It's going to be the wrong graph, but it's going to look nice!
 
 ```
 wcrawler view -i /tmp/result.json
