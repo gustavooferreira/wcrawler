@@ -92,6 +92,7 @@ Still have a few more things to do like:
 - Show last 10 errors in the CLI while crawling
 - Make output more colorful
 - Docs, docs and more docs
+- Write more unittests
 - Increase coverage and run some benchmarks (I'm pretty sure I can speed up some parts and reduce allocations, even though this program is I/O bound more than anything else so won't benefit much from these optimizations, but practice is practice)
 - Add golangci-lint to travis-ci (cos it's quite nice)
 - Organize code in a way that makes it for a useful library (mostly done)
