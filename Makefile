@@ -1,5 +1,17 @@
-.PHONY: all
-all: help
+GREEN  := $(shell tput -Txterm setaf 2)
+YELLOW := $(shell tput -Txterm setaf 3)
+WHITE  := $(shell tput -Txterm setaf 7)
+RESET  := $(shell tput -Txterm sgr0)
+
+
+.PHONY: help
+help: ## Show this help.
+	@echo ''
+	@echo 'Usage:'
+	@echo '  ${YELLOW}make${RESET} ${GREEN}<target>${RESET}'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  ${YELLOW}%-18s${GREEN}%s${RESET}\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 
 .PHONY: build
@@ -60,19 +72,3 @@ find_todo: ## Find all TODOs in the code
 count: ## Count number of lines in go files
 	@echo "Lines of code:"
 	@find . -type f -name "*.go" | xargs wc -l
-
-
-GREEN  := $(shell tput -Txterm setaf 2)
-YELLOW := $(shell tput -Txterm setaf 3)
-WHITE  := $(shell tput -Txterm setaf 7)
-RESET  := $(shell tput -Txterm sgr0)
-
-
-.PHONY: help
-help: ## Show this help.
-	@echo ''
-	@echo 'Usage:'
-	@echo '  ${YELLOW}make${RESET} ${GREEN}<target>${RESET}'
-	@echo ''
-	@echo 'Targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  ${YELLOW}%-18s${GREEN}%s${RESET}\n", $$1, $$2}' $(MAKEFILE_LIST)
