@@ -1,13 +1,19 @@
 package wcrawler_test
 
 import (
+	"bytes"
 	"testing"
+
+	"github.com/gustavooferreira/wcrawler"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewStatsManagerCreation(t *testing.T) {
-	// sm := wcrawler.NewStatsManager(10, 5)
+func TestNewStatsCLIOutWriterInstanciation(t *testing.T) {
+	buf := &bytes.Buffer{}
+	sm := wcrawler.NewStatsCLIOutWriter(buf, 10, 5)
 
-	// sm.UpdateStats(wcrawler.SetAppState(wcrawler.AppState_Running))
+	sm.SetAppState(wcrawler.AppState_Finished)
+	sm.RunOutputFlusher()
 
-	// assert.Equal(t, wcrawler.AppState_Running, int(sm.State))
+	assert.Contains(t, buf.String(), "Crawler State:    Finished")
 }
