@@ -1,4 +1,4 @@
-package stats
+package wcrawler
 
 import (
 	"fmt"
@@ -238,21 +238,4 @@ func (sm *StatsCLIOutput) RunOutputFlusher() {
 
 	// fmt.Fprintf(sm.writer, "Finished!\nTotal Links found: %d", sm.linksCount)
 	sm.writer.Stop() // flush and stop rendering
-}
-
-// AppState represents the current state of the App.
-type AppState uint
-
-const (
-	// AppState_IDLE represents the 'idle' state.
-	AppState_IDLE = iota + 1
-	// AppState_Running represents the 'run' state.
-	AppState_Running
-	// AppState_Finished represents the 'finish' state.
-	AppState_Finished
-)
-
-// String returns the string representation of AppState.
-func (as AppState) String() string {
-	return [...]string{"", "IDLE", "Running", "Finished"}[as]
 }

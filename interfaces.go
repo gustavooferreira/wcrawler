@@ -2,8 +2,6 @@ package wcrawler
 
 import (
 	"time"
-
-	"github.com/gustavooferreira/wcrawler/internal/stats"
 )
 
 // Connector describes the connector interface
@@ -12,6 +10,9 @@ type Connector interface {
 }
 
 type StatsManager interface {
-	UpdateStats(updates ...func(*stats.StatsCLIOutput))
+	// Functional options pattern
+	UpdateStats(updates ...func(StatsManager))
+	SetAppState(state AppState)
+
 	RunOutputFlusher()
 }
