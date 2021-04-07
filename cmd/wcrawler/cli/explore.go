@@ -13,6 +13,7 @@ func newExploreCmd() *cobra.Command {
 	var (
 		filePath        string
 		nostats         bool
+		showerrors      bool
 		workers         uint
 		timeout         uint
 		retry           uint
@@ -43,7 +44,7 @@ func newExploreCmd() *cobra.Command {
 			defer f.Close()
 
 			connector := wcrawler.NewWebClient(client)
-			c, err := wcrawler.NewCrawler(connector, url, int(retry), f, !nostats, stayinsubdomain, treemode, int(workers), int(depth))
+			c, err := wcrawler.NewCrawler(connector, url, int(retry), f, !nostats, showerrors, stayinsubdomain, treemode, int(workers), int(depth))
 			if err != nil {
 				return err
 			}
@@ -54,6 +55,7 @@ func newExploreCmd() *cobra.Command {
 
 	exploreCmd.Flags().StringVarP(&filePath, "output", "o", "./web_graph.json", "file to save results")
 	exploreCmd.Flags().BoolVarP(&nostats, "nostats", "s", false, "don't show live stats")
+	exploreCmd.Flags().BoolVarP(&showerrors, "showerrors", "e", false, "show list of errors")
 	exploreCmd.Flags().UintVarP(&workers, "workers", "w", 100, "number of workers making concurrent requests")
 	exploreCmd.Flags().UintVarP(&timeout, "timeout", "t", 10, "HTTP requests timeout in seconds")
 	exploreCmd.Flags().UintVarP(&retry, "retry", "r", 2, "retry requests when they timeout")

@@ -19,6 +19,7 @@ type Crawler struct {
 	InitialURL      string
 	linksWriter     io.Writer
 	Stats           bool
+	ShowErrors      bool
 	WorkersCount    int
 	Depth           int
 	StayInSubdomain bool
@@ -34,7 +35,7 @@ type Crawler struct {
 }
 
 // NewCrawler returns a new Crawler.
-func NewCrawler(connector Connector, initialURL string, retry int, linksWriter io.Writer, stats bool, stayinsubdomain bool, treemode bool, workersCount int, depth int) (*Crawler, error) {
+func NewCrawler(connector Connector, initialURL string, retry int, linksWriter io.Writer, stats bool, showErrors bool, stayinsubdomain bool, treemode bool, workersCount int, depth int) (*Crawler, error) {
 
 	urlEntity, err := ExtractURL(initialURL)
 	if err != nil {
@@ -54,6 +55,7 @@ func NewCrawler(connector Connector, initialURL string, retry int, linksWriter i
 			InitialURL:      urlEntity.Raw,
 			linksWriter:     linksWriter,
 			Stats:           stats,
+			ShowErrors:      showErrors,
 			WorkersCount:    workersCount,
 			Depth:           depth,
 			StayInSubdomain: stayinsubdomain,
@@ -77,7 +79,7 @@ func (c *Crawler) Run() {
 
 		c.statsWriter = uilive.New()
 
-		sm := NewStatsCLIOutWriter(c.statsWriter, c.WorkersCount, c.Depth)
+		sm := NewStatsCLIOutWriter(c.statsWriter, c.ShowErrors, c.WorkersCount, c.Depth)
 		wg.Add(1)
 		c.statsManager = sm
 		go c.StatsWriter(&wg)
@@ -224,15 +226,17 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 		}
 
 		if c.Stats {
-			errCount := 0
-			if r.Err != nil || r.StatusCode < 200 || r.StatusCode >= 300 {
-				errCount = 1
+			if r.Err != nil {
+				c.statsManager.IncDecErrorsCount(1)
+				c.statsManager.AddErrorEntry(r.Err.Error())
+			} else if r.StatusCode < 200 || r.StatusCode >= 300 {
+				c.statsManager.IncDecErrorsCount(1)
+				c.statsManager.AddErrorEntry(fmt.Sprintf("error: status code received: %d", r.StatusCode))
 			}
 
 			c.statsManager.SetLinksInQueue(jobsCounter)
 			c.statsManager.SetLinksCount(rm.Count())
 			c.statsManager.SetDepth(r.Depth)
-			c.statsManager.IncDecErrorsCount(errCount)
 		}
 
 		// fill tasks channel until either channel blocks or queue is empty

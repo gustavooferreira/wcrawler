@@ -3,8 +3,11 @@ package wcrawler
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/gustavooferreira/wcrawler/internal/ring"
 )
 
 // TODO: we can do better here.
@@ -21,8 +24,11 @@ type StatsCLIOutWriter struct {
 
 	// Read only vars
 	// --------------
+	// enables or disables the presentation of errors in the output
+	showErrorsFlag bool
+	// total
 	totalWorkersCount int
-	// depth level provided by user
+	// max depth level provided by user
 	maxDepthLevel int
 
 	// mu protects access to the fields below
@@ -33,10 +39,12 @@ type StatsCLIOutWriter struct {
 
 	// This is the total number of links still to be checked
 	// This number will keep increasing as new links are found.
-	linksInQueue       int
-	linksCount         int
-	errorCounts        int
-	workersRunning     int
+	linksInQueue int
+	linksCount   int
+	errorCounts  int
+	// number of workers running currently
+	workersRunning int
+	// number of HTTP requests made
 	totalRequestsCount int
 	// current level of depth
 	depth int
@@ -52,12 +60,18 @@ type StatsCLIOutWriter struct {
 	rps int
 
 	// List of errors that happen during crawling
-	errors [10]error
+	errorsList ring.Buffer
 }
 
 // NewStatsCLIOutWriter returns a new StatsCLIOutWriter.
-func NewStatsCLIOutWriter(writer io.Writer, totalWorkersCount int, depth int) *StatsCLIOutWriter {
-	sm := StatsCLIOutWriter{writer: writer, state: AppState_IDLE, totalWorkersCount: totalWorkersCount, maxDepthLevel: depth}
+func NewStatsCLIOutWriter(writer io.Writer, showErrors bool, totalWorkersCount int, depth int) *StatsCLIOutWriter {
+	sm := StatsCLIOutWriter{
+		writer:            writer,
+		showErrorsFlag:    showErrors,
+		state:             AppState_IDLE,
+		totalWorkersCount: totalWorkersCount,
+		maxDepthLevel:     depth,
+		errorsList:        ring.New(10)}
 	return &sm
 }
 
@@ -163,6 +177,12 @@ func (sm *StatsCLIOutWriter) AddLatencySample(value time.Duration) {
 	}
 }
 
+func (sm *StatsCLIOutWriter) AddErrorEntry(value string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.errorsList.Add(value)
+}
+
 // This functions writes the updated stats to an io.Writer
 // Run this in a goroutine
 func (sm *StatsCLIOutWriter) RunOutputFlusher() {
@@ -174,16 +194,10 @@ func (sm *StatsCLIOutWriter) RunOutputFlusher() {
 		"Requests/s: %14d\n" +
 		"Latency --------------- (in  seconds) ---------------\n" +
 		"Min: %6.3f    -     Avg: %6.3f     -    Max: %6.3f\n"
-		// "Last 10 errors --------------------------------------\n" +
-		// "%s"
 
-		// If zero samples, don't display latency
+	errorsStr := "Last 10 errors max ----------------------------------\n"
 
-		// truncate error messages to 50 chars
-		// last 10 errors:
-		// - error 1
-		// - error 2
-		// - error etc
+	// If zero samples, don't display latency
 
 	// Setup counter (up to 5 times) since we wait 200 milliseconds,
 	// when we get to 5 it means it's time to look at the totalrequest count
@@ -196,12 +210,6 @@ func (sm *StatsCLIOutWriter) RunOutputFlusher() {
 	for {
 		sm.mu.Lock()
 
-		// if len(sm.errors) != 0
-		// append string at the end with the errors formatted
-		// Only show last 10 errors
-		// Errors (last 10):
-		// - one error per line
-		// - two errors, etc
 		errorsPerc := 0.0
 		if sm.totalRequestsCount != 0 {
 			errorsPerc = 100 * float64(sm.errorCounts) / float64(sm.totalRequestsCount)
@@ -215,11 +223,36 @@ func (sm *StatsCLIOutWriter) RunOutputFlusher() {
 			previousTotalRequestCount = sm.totalRequestsCount
 		}
 
-		// errorsLines := "- error 1\n- error 2\n- error 3\n"
+		// truncate error messages to 50 chars
+		// last 10 errors:
+		// - error 1
+		// - error 2
+		// - error etc
 
-		fmt.Fprintf(sm.writer, fmtStr, sm.state, sm.linksCount, sm.depth, sm.maxDepthLevel,
+		// if len(sm.errors) != 0
+		// append string at the end with the errors formatted
+		// Only show last 10 errors
+		// Errors (last 10):
+		// - one error per line
+		// - two errors, etc
+
+		var statsBuf strings.Builder
+
+		fmt.Fprintf(&statsBuf, fmtStr, sm.state, sm.linksCount, sm.depth, sm.maxDepthLevel,
 			sm.linksInQueue, sm.workersRunning, sm.totalWorkersCount, sm.totalRequestsCount,
-			sm.errorCounts, errorsPerc, rps, sm.lMin, sm.lAvgSum/sm.lAvgCount, sm.lMax) //, errorsLines)
+			sm.errorCounts, errorsPerc, rps, sm.lMin, sm.lAvgSum/sm.lAvgCount, sm.lMax)
+
+		if sm.showErrorsFlag {
+			if sm.errorsList.Len() != 0 {
+				fmt.Fprintf(&statsBuf, errorsStr)
+
+				for _, item := range sm.errorsList.ReadAll() {
+					fmt.Fprintf(&statsBuf, "- %s\n", item)
+				}
+			}
+		}
+
+		fmt.Fprint(sm.writer, statsBuf.String())
 		sm.mu.Unlock()
 
 		// Only stop when AppState == Finished!
