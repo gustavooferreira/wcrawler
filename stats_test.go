@@ -10,7 +10,7 @@ import (
 
 func TestNewStatsCLIOutWriterInstanciation(t *testing.T) {
 	buf := &bytes.Buffer{}
-	sm := wcrawler.NewStatsCLIOutWriter(buf, 10, 5)
+	sm := wcrawler.NewStatsCLIOutWriter(buf, false, 10, 5)
 
 	sm.SetAppState(wcrawler.AppState_Finished)
 	sm.RunOutputFlusher()
