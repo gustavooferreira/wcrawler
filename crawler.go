@@ -6,16 +6,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gosuri/uilive"
 	"github.com/oleiade/lane"
 )
 
 // Crawler brings everything together and is responsible for starting goroutines and manage them.
 type Crawler struct {
-	connector Connector
+	connector   Connector
+	statsWriter *uilive.Writer
 
 	// Read-only vars
 	InitialURL      string
-	IOWriter        io.Writer
+	linksWriter     io.Writer
 	Stats           bool
 	WorkersCount    int
 	Depth           int
@@ -24,7 +26,7 @@ type Crawler struct {
 	SubDomain       string
 	Retry           int
 
-	statsManager *StatsCLIOutput
+	statsManager *StatsCLIOutWriter
 
 	// Channels
 	tasks   chan Task
@@ -32,7 +34,7 @@ type Crawler struct {
 }
 
 // NewCrawler returns a new Crawler.
-func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.Writer, stats bool, stayinsubdomain bool, treemode bool, workersCount int, depth int) (*Crawler, error) {
+func NewCrawler(connector Connector, initialURL string, retry int, linksWriter io.Writer, stats bool, stayinsubdomain bool, treemode bool, workersCount int, depth int) (*Crawler, error) {
 
 	urlEntity, err := ExtractURL(initialURL)
 	if err != nil {
@@ -50,7 +52,7 @@ func NewCrawler(connector Connector, initialURL string, retry int, ioWriter io.W
 	return &Crawler{
 			connector:       connector,
 			InitialURL:      urlEntity.Raw,
-			IOWriter:        ioWriter,
+			linksWriter:     linksWriter,
 			Stats:           stats,
 			WorkersCount:    workersCount,
 			Depth:           depth,
@@ -72,12 +74,15 @@ func (c *Crawler) Run() {
 
 	// Start stats goroutine
 	if c.Stats {
-		sm := NewStatsManager(c.WorkersCount, c.Depth)
+
+		c.statsWriter = uilive.New()
+
+		sm := NewStatsCLIOutWriter(c.statsWriter, c.WorkersCount, c.Depth)
 		wg.Add(1)
 		c.statsManager = sm
 		go c.StatsWriter(&wg)
 
-		c.statsManager.UpdateStats(SetAppState(AppState_Running))
+		c.statsManager.SetAppState(AppState_Running)
 	}
 
 	// Start merger goroutine (deals with records manager)
@@ -105,7 +110,7 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 
 	for t := range c.tasks {
 		if c.Stats {
-			c.statsManager.UpdateStats(IncDecWorkersRunning(1))
+			c.statsManager.IncDecWorkersRunning(1)
 		}
 
 		var statusCode int
@@ -133,9 +138,9 @@ func (c *Crawler) WorkerRun(wg *sync.WaitGroup) {
 		c.results <- r
 
 		if c.Stats {
-			c.statsManager.UpdateStats(IncDecWorkersRunning(-1),
-				IncDecTotalRequestsCount(1),
-				AddLatencySample(latency))
+			c.statsManager.IncDecWorkersRunning(-1)
+			c.statsManager.IncDecTotalRequestsCount(1)
+			c.statsManager.AddLatencySample(latency)
 		}
 	}
 }
@@ -168,7 +173,7 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	jobsCounter++
 
 	if c.Stats {
-		c.statsManager.UpdateStats(SetLinksInQueue(jobsCounter))
+		c.statsManager.SetLinksInQueue(jobsCounter)
 	}
 
 	// ---------
@@ -224,11 +229,10 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 				errCount = 1
 			}
 
-			c.statsManager.UpdateStats(
-				SetLinksInQueue(jobsCounter),
-				SetLinksCount(rm.Count()),
-				SetDepth(r.Depth),
-				IncDecErrorsCount(errCount))
+			c.statsManager.SetLinksInQueue(jobsCounter)
+			c.statsManager.SetLinksCount(rm.Count())
+			c.statsManager.SetDepth(r.Depth)
+			c.statsManager.IncDecErrorsCount(errCount)
 		}
 
 		// fill tasks channel until either channel blocks or queue is empty
@@ -259,18 +263,21 @@ func (c *Crawler) Merger(wg *sync.WaitGroup) {
 	}
 
 	// Write to file
-	err = rm.SaveToWriter(c.IOWriter, true)
+	err = rm.SaveToWriter(c.linksWriter, true)
 	if err != nil {
 		// log
 	}
 
 	if c.Stats {
-		c.statsManager.UpdateStats(SetAppState(AppState_Finished))
+		c.statsManager.SetAppState(AppState_Finished)
 	}
 }
 
 // StatsWriter writes stats to a io.Writer (e.g. os.Stdout)
 func (c *Crawler) StatsWriter(wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	c.statsWriter.Start()
+	defer c.statsWriter.Stop() // flush and stop rendering
 	c.statsManager.RunOutputFlusher()
 }
