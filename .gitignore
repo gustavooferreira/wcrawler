@@ -41,6 +41,9 @@
 #
 # ### Custom
 
+### Mac ###
+.DS_Store
+
 # VSCode project settings
 # .vscode
 
@@ -53,5 +56,3 @@
 # Coverage report
 /coverage.txt
 
-# Mac files
-.DS_Store
